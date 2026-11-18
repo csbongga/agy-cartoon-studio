@@ -25,7 +25,7 @@
   <!-- Top Navigation Bar -->
   <header class="topbar">
     <div class="topbar-inner">
-      <a href="#theater" class="brand" id="brand-home" aria-label="AGY Cartoon Studio">
+      <a href="#home" class="brand" id="brand-home" aria-label="AGY Cartoon Studio">
         <span class="brand-icon" aria-hidden="true">🎬</span>
         <div class="brand-text">
           <span class="brand-title">AGY Cartoon Studio</span>
@@ -39,12 +39,25 @@
           class="nav-tab active"
           role="tab"
           aria-selected="true"
+          aria-controls="tab-home"
+          data-tab="home"
+        >
+          <span class="tab-emoji" aria-hidden="true">🎬</span>
+          <span class="tab-label">ดูคลิปการ์ตูน (หน้าแรก)</span>
+          <span class="tab-en">Watch Gallery</span>
+        </button>
+
+        <button
+          type="button"
+          class="nav-tab"
+          role="tab"
+          aria-selected="false"
           aria-controls="tab-theater"
           data-tab="theater"
         >
-          <span class="tab-emoji" aria-hidden="true">🍿</span>
-          <span class="tab-label">โรงภาพยนตร์การ์ตูนสั้น</span>
-          <span class="tab-en">Shorts Theater</span>
+          <span class="tab-emoji" aria-hidden="true">🎞️</span>
+          <span class="tab-label">ดูแยกซีน &amp; สตอรี่บอร์ด</span>
+          <span class="tab-en">Scene Theater</span>
         </button>
 
         <button
@@ -83,9 +96,24 @@
 
   <main class="app-shell">
     <!-- ========================================================= -->
-    <!-- TAB 1: SHORTS THEATER                                     -->
+    <!-- TAB 1 (DEFAULT): CLEAN FULLSCREEN VIDEO GALLERY           -->
     <!-- ========================================================= -->
-    <section id="tab-theater" class="tab-panel active" role="tabpanel">
+    <section id="tab-home" class="tab-panel active" role="tabpanel">
+      <div class="home-hero">
+        <span class="badge-gold">POPCORN TIME • 9:16 VERTICAL SHORTS</span>
+        <h1>🍿 โรงหนังการ์ตูนสั้น AI — กดเลือกตอนเพื่อดูเต็มจอทันที</h1>
+        <p>คลิกที่โปสเตอร์ตอนใดก็ได้เพื่อเปิดรับชมแบบเต็มจอภาพคมชัด 1080×1920 พร้อมเสียงพากย์ไทย</p>
+      </div>
+
+      <div class="home-gallery-grid" id="home-gallery-grid" role="list">
+        <!-- Populated cleanly with 4 vertical poster cards by app.js -->
+      </div>
+    </section>
+
+    <!-- ========================================================= -->
+    <!-- TAB 2: SCENE-BY-SCENE THEATER                             -->
+    <!-- ========================================================= -->
+    <section id="tab-theater" class="tab-panel" role="tabpanel" hidden>
       <!-- Episode Selector Carousel -->
       <section class="episode-bar-section" aria-label="เลือกตอนการ์ตูน">
         <div class="section-head-compact">
@@ -563,6 +591,69 @@
       </div>
     </section>
   </main>
+
+  <!-- ========================================================= -->
+  <!-- FULLSCREEN CINEMA PLAYER MODAL (FROM HOME GALLERY)        -->
+  <!-- ========================================================= -->
+  <div
+    id="fullscreen-player-modal"
+    class="fs-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="fs-ep-title"
+    hidden
+  >
+    <div class="fs-backdrop" id="fs-backdrop"></div>
+    <div class="fs-dialog">
+      <div class="fs-topbar">
+        <div class="fs-title-group">
+          <span class="badge-gold" id="fs-ep-badge">EP.1</span>
+          <h2 id="fs-ep-title">กำลังโหลดวิดีโอ...</h2>
+          <span class="fs-ep-meta" id="fs-ep-meta">1080×1920 • 30FPS</span>
+        </div>
+        <button
+          type="button"
+          class="btn btn-close-fs"
+          id="btn-fs-close"
+          aria-label="ปิดหน้าต่าง"
+        >
+          ✕ ปิดหน้าต่าง / กลับหน้ารวมคลิป
+        </button>
+      </div>
+
+      <div class="fs-stage">
+        <video
+          id="home-fullscreen-video"
+          controls
+          autoplay
+          playsinline
+        ></video>
+      </div>
+
+      <div class="fs-bottombar">
+        <div class="fs-nav-group">
+          <button type="button" class="btn btn-ghost" id="btn-fs-prev">
+            ⏮️ ตอนก่อนหน้า
+          </button>
+          <button type="button" class="btn btn-ghost" id="btn-fs-next">
+            ⏭️ ตอนถัดไป
+          </button>
+        </div>
+
+        <div class="fs-action-group">
+          <button type="button" class="btn btn-gold" id="btn-fs-native">
+            ⛶ ขยายเต็มจอแท้ 100%
+          </button>
+          <a id="fs-download-mp4" class="btn btn-outline-accent" href="#" download>
+            ⬇️ ดาวน์โหลดคลิป (.MP4)
+          </a>
+          <button type="button" class="btn btn-outline-subtle" id="btn-fs-inspect-scenes">
+            🎞️ ดูแยกซีนของตอนนี้
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <footer class="app-footer">
     <p>

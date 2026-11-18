@@ -14,16 +14,29 @@
 
   let episodes = [];
   let currentEpIndex = 0;
+  let fsEpIndex = 0;
   let currentSceneIndex = -1;
   let currentSpeed = 1.0;
   let speakerFilter = "all";
   let searchQuery = "";
   let studioEngine = null;
   let toastTimer = null;
+  let activateTabFn = null;
 
   // ------------------------------------------------------------------
-  // Utilities
+  // Utilities & Audio/Video Sync
   // ------------------------------------------------------------------
+  function pauseOtherVideos(exceptId) {
+    const mainVid = document.getElementById("main-video");
+    const fsVid = document.getElementById("home-fullscreen-video");
+    if (mainVid && exceptId !== "main-video" && !mainVid.paused) {
+      mainVid.pause();
+    }
+    if (fsVid && exceptId !== "home-fullscreen-video" && !fsVid.paused) {
+      fsVid.pause();
+    }
+  }
+
   function showToast(msg) {
     const el = document.getElementById("toast");
     if (!el) return;
@@ -59,6 +72,7 @@
   function initTabs() {
     const tabBtns = document.querySelectorAll(".nav-tab");
     const panels = {
+      home: document.getElementById("tab-home"),
       theater: document.getElementById("tab-theater"),
       studio: document.getElementById("tab-studio"),
       pipeline: document.getElementById("tab-pipeline"),
@@ -66,6 +80,20 @@
 
     function activateTab(tabName) {
       if (!panels[tabName]) return;
+
+      // Never allow theater & home fullscreen videos to play simultaneously
+      if (tabName !== "theater") {
+        pauseOtherVideos("home-fullscreen-video");
+      }
+      if (tabName !== "home") {
+        const modal = document.getElementById("fullscreen-player-modal");
+        if (modal && !modal.hidden) {
+          closeFullscreenModal();
+        } else {
+          pauseOtherVideos("main-video");
+        }
+      }
+
       tabBtns.forEach((btn) => {
         const isTarget = btn.dataset.tab === tabName;
         btn.classList.toggle("active", isTarget);
@@ -81,6 +109,8 @@
       }
     }
 
+    activateTabFn = activateTab;
+
     tabBtns.forEach((btn) => {
       btn.addEventListener("click", () => {
         const tabName = btn.dataset.tab;
@@ -95,14 +125,180 @@
     if (brandHome) {
       brandHome.addEventListener("click", (e) => {
         e.preventDefault();
-        activateTab("theater");
+        activateTab("home");
+        if (history.replaceState) {
+          history.replaceState(null, "", "#home");
+        }
       });
     }
 
     const hash = window.location.hash.replace("#", "");
     if (panels[hash]) {
       activateTab(hash);
+    } else {
+      activateTab("home");
     }
+  }
+
+  // ------------------------------------------------------------------
+  // Tab 1 (Default): Clean Home Video Gallery & Fullscreen Player
+  // ------------------------------------------------------------------
+  function renderHomeGallery() {
+    const grid = document.getElementById("home-gallery-grid");
+    if (!grid) return;
+
+    grid.innerHTML = episodes
+      .map((ep, idx) => {
+        const poster = ep.thumbnail_url || (ep.scenes && ep.scenes[0] && ep.scenes[0].preview_url) || "";
+        const dur = Number(ep.total_duration_sec || 0).toFixed(1);
+        return `
+          <article
+            class="poster-card"
+            data-ep-idx="${idx}"
+            role="listitem"
+            tabindex="0"
+            aria-label="เปิดดู ${escapeHtml(ep.short_title || ep.title)} เต็มจอ"
+          >
+            <div class="poster-media">
+              <img src="${escapeHtml(poster)}" alt="${escapeHtml(ep.short_title || ep.title)}" loading="lazy" />
+              <div class="poster-gradient-overlay" aria-hidden="true"></div>
+              <div class="poster-top-badges">
+                <span class="poster-ep-badge">EP.${ep.number}</span>
+                <span class="poster-dur-badge">${dur}s</span>
+              </div>
+              <div class="poster-center-play" aria-hidden="true">
+                <span class="poster-play-circle">▶</span>
+              </div>
+            </div>
+            <div class="poster-body">
+              <span class="poster-cat-pill">${escapeHtml(ep.category || "การ์ตูนสั้น")}</span>
+              <h2 class="poster-title">${escapeHtml(ep.title || ep.short_title)}</h2>
+              <button type="button" class="btn btn-gold poster-cta">
+                ▶️ กดดูวิดีโอเต็มจอ
+              </button>
+            </div>
+          </article>
+        `;
+      })
+      .join("");
+
+    grid.querySelectorAll(".poster-card").forEach((card) => {
+      const open = () => {
+        const idx = Number(card.dataset.epIdx);
+        openFullscreenEpisode(idx);
+      };
+      card.addEventListener("click", open);
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          open();
+        }
+      });
+    });
+  }
+
+  function openFullscreenEpisode(idx) {
+    if (!episodes.length) return;
+    fsEpIndex = ((idx % episodes.length) + episodes.length) % episodes.length;
+    const ep = episodes[fsEpIndex];
+
+    const modal = document.getElementById("fullscreen-player-modal");
+    const fsVideo = document.getElementById("home-fullscreen-video");
+    const badge = document.getElementById("fs-ep-badge");
+    const title = document.getElementById("fs-ep-title");
+    const meta = document.getElementById("fs-ep-meta");
+    const dlBtn = document.getElementById("fs-download-mp4");
+    if (!modal || !fsVideo) return;
+
+    pauseOtherVideos("home-fullscreen-video");
+
+    const poster = ep.thumbnail_url || (ep.scenes && ep.scenes[0] && ep.scenes[0].preview_url) || "";
+    const dur = Number(ep.total_duration_sec || 0).toFixed(1);
+    badge.textContent = `EP.${ep.number}`;
+    title.textContent = ep.title || ep.short_title;
+    meta.textContent = `${ep.category || "การ์ตูนสั้น"} • ${dur}s • ${ep.width || 1080}×${ep.height || 1920}`;
+
+    dlBtn.href = ep.video_url;
+    dlBtn.setAttribute("download", `${ep.id}_cartoon.mp4`);
+
+    fsVideo.poster = poster;
+    fsVideo.src = ep.video_url;
+    modal.hidden = false;
+    document.body.style.overflow = "hidden";
+
+    fsVideo.play().catch(() => {});
+  }
+
+  function closeFullscreenModal() {
+    const modal = document.getElementById("fullscreen-player-modal");
+    const fsVideo = document.getElementById("home-fullscreen-video");
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
+    if (fsVideo) {
+      fsVideo.pause();
+    }
+    if (modal) {
+      modal.hidden = true;
+    }
+    document.body.style.overflow = "";
+  }
+
+  function initFullscreenModal() {
+    const btnClose = document.getElementById("btn-fs-close");
+    const backdrop = document.getElementById("fs-backdrop");
+    const btnPrev = document.getElementById("btn-fs-prev");
+    const btnNext = document.getElementById("btn-fs-next");
+    const btnNative = document.getElementById("btn-fs-native");
+    const btnInspect = document.getElementById("btn-fs-inspect-scenes");
+    const fsVideo = document.getElementById("home-fullscreen-video");
+
+    if (btnClose) btnClose.addEventListener("click", closeFullscreenModal);
+    if (backdrop) backdrop.addEventListener("click", closeFullscreenModal);
+
+    if (btnPrev) {
+      btnPrev.addEventListener("click", () => openFullscreenEpisode(fsEpIndex - 1));
+    }
+    if (btnNext) {
+      btnNext.addEventListener("click", () => openFullscreenEpisode(fsEpIndex + 1));
+    }
+
+    if (btnNative && fsVideo) {
+      btnNative.addEventListener("click", () => {
+        if (fsVideo.requestFullscreen) {
+          fsVideo.requestFullscreen().catch(() => {});
+        } else if (fsVideo.webkitRequestFullscreen) {
+          fsVideo.webkitRequestFullscreen();
+        } else if (fsVideo.webkitEnterFullscreen) {
+          fsVideo.webkitEnterFullscreen();
+        }
+      });
+    }
+
+    if (btnInspect) {
+      btnInspect.addEventListener("click", () => {
+        const targetIdx = fsEpIndex;
+        closeFullscreenModal();
+        if (activateTabFn) activateTabFn("theater");
+        if (history.replaceState) {
+          history.replaceState(null, "", "#theater");
+        }
+        selectEpisode(targetIdx, false);
+      });
+    }
+
+    if (fsVideo) {
+      fsVideo.addEventListener("play", () => pauseOtherVideos("home-fullscreen-video"));
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        const modal = document.getElementById("fullscreen-player-modal");
+        if (modal && !modal.hidden) {
+          closeFullscreenModal();
+        }
+      }
+    });
   }
 
   // ------------------------------------------------------------------
@@ -385,7 +581,10 @@
       }
     });
 
-    video.addEventListener("play", syncPlayBtn);
+    video.addEventListener("play", () => {
+      pauseOtherVideos("main-video");
+      syncPlayBtn();
+    });
     video.addEventListener("pause", syncPlayBtn);
 
     video.addEventListener("timeupdate", () => {
@@ -589,6 +788,7 @@
 
   async function init() {
     initTabs();
+    initFullscreenModal();
     initTheaterControls();
     initStudio();
     initPipelineCopyButtons();
@@ -596,6 +796,7 @@
     episodes = await loadEpisodesData();
     if (episodes.length) {
       updateGlobalStatsPill();
+      renderHomeGallery();
       renderEpisodeCarousel();
       selectEpisode(0, false);
     } else {

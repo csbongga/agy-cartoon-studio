@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AGY 2D Cartoon Studio &amp; Shorts Theater</title>
+  <meta
+    name="description"
+    content="โรงภาพยนตร์การ์ตูนสั้น 2D แนวตั้ง 9:16 พร้อมสตูดิโอสร้างซีนสด HTML5 Canvas และระบบพากย์เสียง AI"
+  />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Ambient Background Glows -->
+  <div class="bg-orb bg-orb-1" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb-2" aria-hidden="true"></div>
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <!-- Top Navigation Bar -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="#theater" class="brand" id="brand-home" aria-label="AGY Cartoon Studio">
+        <span class="brand-icon" aria-hidden="true">🎬</span>
+        <div class="brand-text">
+          <span class="brand-title">AGY Cartoon Studio</span>
+          <span class="brand-sub">AI Offices — Office 5 + Office 1</span>
+        </div>
+      </a>
+
+      <nav class="nav-tabs" role="tablist" aria-label="เมนูหลัก">
+        <button
+          type="button"
+          class="nav-tab active"
+          role="tab"
+          aria-selected="true"
+          aria-controls="tab-theater"
+          data-tab="theater"
+        >
+          <span class="tab-emoji" aria-hidden="true">🍿</span>
+          <span class="tab-label">โรงภาพยนตร์การ์ตูนสั้น</span>
+          <span class="tab-en">Shorts Theater</span>
+        </button>
+
+        <button
+          type="button"
+          class="nav-tab"
+          role="tab"
+          aria-selected="false"
+          aria-controls="tab-studio"
+          data-tab="studio"
+        >
+          <span class="tab-emoji" aria-hidden="true">🎨</span>
+          <span class="tab-label">สตูดิโอสร้างซีน 2D สด</span>
+          <span class="tab-en">Live 2D Studio</span>
+        </button>
+
+        <button
+          type="button"
+          class="nav-tab"
+          role="tab"
+          aria-selected="false"
+          aria-controls="tab-pipeline"
+          data-tab="pipeline"
+        >
+          <span class="tab-emoji" aria-hidden="true">⚙️</span>
+          <span class="tab-label">สถาปัตยกรรมระบบ</span>
+          <span class="tab-en">AI Pipeline</span>
+        </button>
+      </nav>
+
+      <div class="stats-pill" id="global-stats-pill" title="ข้อมูลคลังตอนทั้งหมด">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span id="stats-pill-text">4 ตอนสำเร็จรูป • 32 ซีน • 1080x1920 30FPS</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <!-- ========================================================= -->
+    <!-- TAB 1: SHORTS THEATER                                     -->
+    <!-- ========================================================= -->
+    <section id="tab-theater" class="tab-panel active" role="tabpanel">
+      <!-- Episode Selector Carousel -->
+      <section class="episode-bar-section" aria-label="เลือกตอนการ์ตูน">
+        <div class="section-head-compact">
+          <div class="section-title-group">
+            <span class="badge-gold">NOW SHOWING</span>
+            <h1>เลือกชมการ์ตูนสั้น 9:16 พากย์ไทย</h1>
+          </div>
+          <p class="section-hint">เลือกตอนด้านล่างเพื่อรับชมวิดีโอ พร้อมซิงก์สคริปต์และสตอรี่บอร์ดแบบเรียลไทม์</p>
+        </div>
+        <div class="episode-carousel" id="episode-carousel" role="list">
+          <!-- Populated dynamically by app.js -->
+        </div>
+      </section>
+
+      <!-- Main 2-Column Theater Layout -->
+      <div class="theater-grid">
+        <!-- Left Column: Vertical 9:16 Phone Player & Telemetry HUD -->
+        <aside class="theater-player-col">
+          <div class="phone-stage">
+            <div class="phone-frame">
+              <div class="phone-notch" aria-hidden="true">
+                <span class="notch-speaker"></span>
+                <span class="notch-cam"></span>
+              </div>
+              <div class="phone-screen">
+                <video
+                  id="main-video"
+                  playsinline
+                  controls
+                  preload="metadata"
+                  poster=""
+                ></video>
+                <div class="video-overlay-badge" id="video-ep-badge">EP.1</div>
+              </div>
+            </div>
+
+            <!-- Custom Quick-Control Bar -->
+            <div class="player-controls-card glass-card">
+              <div class="controls-row-primary">
+                <button type="button" class="btn btn-gold" id="btn-play-pause">
+                  <span id="play-pause-icon">▶️</span>
+                  <span id="play-pause-text">เล่น / พัก</span>
+                </button>
+                <button type="button" class="btn btn-ghost" id="btn-prev-scene" title="ซีนก่อนหน้า">
+                  ⏮️ ซีนก่อนหน้า
+                </button>
+                <button type="button" class="btn btn-ghost" id="btn-next-scene" title="ซีนถัดไป">
+                  ⏭️ ซีนถัดไป
+                </button>
+              </div>
+
+              <div class="controls-row-secondary">
+                <label class="toggle-chip" for="toggle-auto-next">
+                  <input type="checkbox" id="toggle-auto-next" checked />
+                  <span class="toggle-track" aria-hidden="true"></span>
+                  <span>🔁 เล่นต่อเนื่องอัตโนมัติ (Auto-Next)</span>
+                </label>
+
+                <div class="speed-group" role="group" aria-label="ความเร็ววิดีโอ">
+                  <span class="speed-label">ความเร็ว:</span>
+                  <button type="button" class="speed-btn" data-speed="0.75">0.75x</button>
+                  <button type="button" class="speed-btn active" data-speed="1">1.0x</button>
+                  <button type="button" class="speed-btn" data-speed="1.25">1.25x</button>
+                </div>
+              </div>
+
+              <div class="controls-row-downloads">
+                <a
+                  id="btn-download-mp4"
+                  class="btn btn-outline-accent"
+                  href="#"
+                  download
+                >
+                  ⬇️ ดาวน์โหลด .MP4
+                </a>
+                <a
+                  id="btn-download-srt"
+                  class="btn btn-outline-subtle"
+                  href="#"
+                  download
+                >
+                  📝 ดาวน์โหลด .SRT
+                </a>
+              </div>
+            </div>
+
+            <!-- Live Scene Telemetry HUD -->
+            <div class="telemetry-hud glass-card" id="telemetry-hud" aria-live="polite">
+              <div class="hud-top">
+                <div class="hud-badges-left">
+                  <span class="hud-scene-badge" id="hud-scene-badge">Scene 1 / 8</span>
+                  <span class="hud-speaker-badge" id="hud-speaker-badge">🎙️ ผู้บรรยาย</span>
+                </div>
+                <span class="hud-timestamp" id="hud-timestamp">00:00.0 / 00:00.0</span>
+              </div>
+
+              <div class="hud-progress-track" aria-hidden="true">
+                <div class="hud-progress-fill" id="hud-progress-fill"></div>
+              </div>
+
+              <p class="hud-voiceover" id="hud-voiceover">
+                กำลังโหลดข้อมูลซีน...
+              </p>
+
+              <div class="hud-meta-grid">
+                <div class="hud-meta-item">
+                  <span class="meta-k">เสียงพากย์ TTS</span>
+                  <span class="meta-v" id="hud-voice-meta">—</span>
+                </div>
+                <div class="hud-meta-item">
+                  <span class="meta-k">มุมกล้อง (Camera)</span>
+                  <span class="meta-v" id="hud-camera-meta">—</span>
+                </div>
+                <div class="hud-meta-item">
+                  <span class="meta-k">เอฟเฟกต์เสียง (SFX)</span>
+                  <span class="meta-v" id="hud-sfx-meta">—</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Right Column: Interactive 8-Scene Storyboard & Timeline Grid -->
+        <section class="theater-storyboard-col glass-card" aria-label="สตอรี่บอร์ดและไทม์ไลน์ซีน">
+          <div class="storyboard-header">
+            <div class="storyboard-title-wrap">
+              <div class="sb-meta-pills">
+                <span class="pill pill-category" id="sb-ep-category">มุกออฟฟิศ</span>
+                <span class="pill pill-res" id="sb-ep-resolution">1080×1920 • 30FPS</span>
+                <span class="pill pill-dur" id="sb-ep-duration">29.2s</span>
+              </div>
+              <h2 id="sb-ep-title">กำลังโหลดตอน...</h2>
+              <p class="sb-hint">
+                💡 คลิกที่การ์ดซีนใดก็ได้เพื่อข้ามไปดูซีนนั้นทันที! การ์ดที่กำลังเล่นจะไฮไลต์สีทองอัตโนมัติ
+              </p>
+            </div>
+
+            <div class="sb-tools">
+              <div class="search-box">
+                <span class="search-icon" aria-hidden="true">🔍</span>
+                <input
+                  type="search"
+                  id="scene-search-input"
+                  placeholder="ค้นหาบทพูด / มุมกล้อง / SFX..."
+                  aria-label="ค้นหาซีนในตอนนี้"
+                />
+              </div>
+              <div class="speaker-filter-pills" id="speaker-filter-pills">
+                <button type="button" class="filter-pill active" data-speaker="all">ทั้งหมด</button>
+                <button type="button" class="filter-pill" data-speaker="narrator">🎙️ ผู้บรรยาย</button>
+                <button type="button" class="filter-pill" data-speaker="boss">😠 บอส</button>
+                <button type="button" class="filter-pill" data-speaker="hero">🙋‍♂️ สมชาย</button>
+                <button type="button" class="filter-pill" data-speaker="husband">💼 สามี</button>
+                <button type="button" class="filter-pill" data-speaker="wife">👩 ภรรยา</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="storyboard-grid" id="storyboard-grid">
+            <!-- 8 Scene cards injected by app.js -->
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ========================================================= -->
+    <!-- TAB 2: LIVE 2D STUDIO                                     -->
+    <!-- ========================================================= -->
+    <section id="tab-studio" class="tab-panel" role="tabpanel" hidden>
+      <div class="studio-header-bar glass-card">
+        <div>
+          <span class="badge-gold">REAL-TIME HTML5 CANVAS 2D ENGINE</span>
+          <h1>🎨 สตูดิโอสร้างซีน 2D สด (Live 2D Scene &amp; Joke Builder)</h1>
+          <p>
+            จำลองเอนจินวาดการ์ตูน 2D แบบเรียลไทม์ 30 FPS บนเบราว์เซอร์ ปรับฉาก สีหน้า บทพากย์ และส่งออกเป็นภาพ PNG หรือ Storyboard JSON ใช้กับ Python Pipeline ได้ทันที
+          </p>
+        </div>
+        <div class="studio-presets-wrap">
+          <span class="presets-label">โหลดเทมเพลตมุกฮาจากตอนจริง:</span>
+          <div class="presets-buttons">
+            <button type="button" class="btn btn-preset" data-preset="ep1">🍜 EP.1 ท้องร้องกลางประชุม</button>
+            <button type="button" class="btn btn-preset" data-preset="ep2">🕔 EP.2 ประชุม 5 โมงเย็น</button>
+            <button type="button" class="btn btn-preset" data-preset="ep3">🚿 EP.3 หลับคาอ่างล้างหน้า</button>
+            <button type="button" class="btn btn-preset" data-preset="ep4">🛋️ EP.4 บ้านรก 3 วันชินเอง</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="studio-workspace">
+        <!-- Left: Live 9:16 Canvas Preview -->
+        <div class="studio-preview-col">
+          <div class="studio-monitor glass-card">
+            <div class="monitor-topbar">
+              <div class="monitor-status">
+                <span class="live-dot" id="studio-live-dot"></span>
+                <span>LIVE CANVAS 540×960 (สเกล 1:2 จาก 1080×1920)</span>
+              </div>
+              <div class="monitor-actions-mini">
+                <span class="fps-badge" id="studio-fps-badge">30 FPS</span>
+                <button type="button" class="btn-mini" id="btn-studio-toggle-anim">⏸️ หยุดชั่วคราว</button>
+              </div>
+            </div>
+
+            <div class="canvas-stage">
+              <canvas id="studio-canvas" width="540" height="960"></canvas>
+            </div>
+
+            <div class="monitor-bottombar">
+              <button type="button" class="btn btn-gold" id="btn-studio-speak">
+                🔊 ทดลองฟังเสียงพากย์ + SFX
+              </button>
+              <button type="button" class="btn btn-outline-accent" id="btn-studio-png">
+                📸 บันทึกภาพซีนเป็น .PNG
+              </button>
+              <button type="button" class="btn btn-outline-subtle" id="btn-studio-json">
+                📦 ส่งออก Storyboard JSON
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Studio Controls Form -->
+        <div class="studio-controls-col glass-card">
+          <form id="studio-form" class="studio-form" onsubmit="return false;">
+            <!-- Background & Board Title -->
+            <div class="control-section">
+              <h2 class="control-section-title">1. ฉากหลัง &amp; ป้ายหัวข้อ (Background &amp; Board)</h2>
+              <div class="form-grid-2">
+                <div class="form-field">
+                  <label for="st-board-mode">ฉากหลัง (board_mode)</label>
+                  <select id="st-board-mode">
+                    <option value="chart_crisis">📊 chart_crisis — ห้องประชุมกราฟวิกฤต</option>
+                    <option value="rules_board">📋 rules_board — กระดานกฎเหล็ก</option>
+                    <option value="office_desk">💼 office_desk — โต๊ะทำงานสมชายฟุบหลับ</option>
+                    <option value="restroom_sink">🚿 restroom_sink — ห้องน้ำชาย &amp; อ่างล้างหน้าน้ำล้น</option>
+                    <option value="messy_living_room">🛋️ messy_living_room — ห้องรับแขกบ้านหรรษาสุดรก</option>
+                    <option value="couple_blue_bg">💙 couple_blue_bg — ฉากคู่รักพื้นหลังสีฟ้า</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label for="st-board-title">ป้ายหัวข้อด้านบน (board_title)</label>
+                  <input type="text" id="st-board-title" value="ประชุมด่วน! ซีเรียส 100%" maxlength="48" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Characters & Expressions -->
+            <div class="control-section">
+              <h2 class="control-section-title">2. ตัวละคร &amp; สีหน้าท่าทาง (Characters &amp; Poses)</h2>
+              <div class="form-grid-2">
+                <div class="form-field">
+                  <label for="st-left-char">ตัวละครฝั่งซ้าย</label>
+                  <select id="st-left-char">
+                    <option value="boss">😠 บอสสูทน้ำเงินแว่นขาว</option>
+                    <option value="husband">💼 สามีถือกระเป๋า</option>
+                    <option value="somchai">🙋‍♂️ สมชาย</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label for="st-left-expr">สีหน้าตัวละครฝั่งซ้าย</label>
+                  <select id="st-left-expr">
+                    <option value="normal">ปกติ (Normal)</option>
+                    <option value="angry_point">โกรธชี้มือไล่ (Angry Point)</option>
+                    <option value="fuming">ควันออกหู (Fuming Rage)</option>
+                    <option value="shock">ช็อกตาค้าง (Shocked)</option>
+                  </select>
+                </div>
+
+                <div class="form-field">
+                  <label for="st-right-char">ตัวละครฝั่งขวา</label>
+                  <select id="st-right-char">
+                    <option value="somchai">🙋‍♂️ สมชายเสื้อเหลือง</option>
+                    <option value="wife">👩 ภรรยาเอี๊ยมชมพู</option>
+                    <option value="coworker">🧑‍💼 เพื่อนร่วมงาน</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label for="st-right-expr">สีหน้าตัวละครฝั่งขวา</label>
+                  <select id="st-right-expr">
+                    <option value="holding_laugh">กลั้นขำ (Holding Laugh)</option>
+                    <option value="idea_hand">ยกมือปิ๊งไอเดีย (Raise Hand Idea)</option>
+                    <option value="sleep_desk">ฟุบหลับคาโต๊ะ Zzz (Sleep Desk)</option>
+                    <option value="sleep_sink">ก้มหลับคาอ่างล้างหน้า (Sleep Sink)</option>
+                    <option value="sofa_chill">นอนโซฟาชิลๆ (Sofa Chill)</option>
+                    <option value="turn_laugh">หันหลังหัวเราะตบมุก (Turn Laugh)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Popups & Subtitles -->
+            <div class="control-section">
+              <h2 class="control-section-title">3. บับเบิ้ลป๊อปอัป &amp; ซับไตเติลสีทอง (Popups &amp; Subtitles)</h2>
+              <div class="form-grid-2">
+                <div class="form-field">
+                  <label for="st-popup-text">ข้อความ Pop-up (popup_text)</label>
+                  <input type="text" id="st-popup-text" value="โครก!!" maxlength="36" placeholder="ปล่อยว่างถ้าไม่แสดง" />
+                </div>
+                <div class="form-field">
+                  <label for="st-popup-style">สไตล์ Pop-up</label>
+                  <select id="st-popup-style">
+                    <option value="speech">💬 คำพูดปกติ (Speech Bubble)</option>
+                    <option value="shout">💥 ตะโกนขอบหยัก (Shout Burst)</option>
+                    <option value="banner_1hr">⏳ ป้ายหนึ่งชั่วโมงผ่านไป</option>
+                    <option value="zzz">💤 Zzz ลอยขึ้น</option>
+                    <option value="clock_17">🕔 นาฬิกา 17:00</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label for="st-subtitle">ซับไตเติลสีทองด้านล่าง (แบ่งบรรทัดด้วยเครื่องหมาย / หรือ Enter)</label>
+                <textarea id="st-subtitle" rows="2">จู่ๆ ท้องก็ดันร้อง โครก!
+ดังลั่นห้องประชุม</textarea>
+              </div>
+            </div>
+
+            <!-- Voiceover, Speaker, SFX & Jitter -->
+            <div class="control-section">
+              <h2 class="control-section-title">4. เสียงพากย์ เอฟเฟกต์ และความสั่น (TTS, SFX &amp; Jitter)</h2>
+              <div class="form-grid-3">
+                <div class="form-field">
+                  <label for="st-speaker">ผู้พูด (Speaker)</label>
+                  <select id="st-speaker">
+                    <option value="narrator">🎙️ ผู้บรรยาย (Niwat)</option>
+                    <option value="boss">😠 บอส (เสียงทุ้ม -12Hz)</option>
+                    <option value="hero">🙋‍♂️ สมชาย (เสียงสูง +8Hz)</option>
+                    <option value="husband">💼 สามี (เสียงทุ้ม -8Hz)</option>
+                    <option value="wife">👩 ภรรยา (Premwadee)</option>
+                  </select>
+                </div>
+
+                <div class="form-field">
+                  <label for="st-sfx">เสียงเอฟเฟกต์สังเคราะห์ (Web Audio SFX)</label>
+                  <select id="st-sfx">
+                    <option value="rimshot">🥁 Rimshot (Ba-Dum-Tss!)</option>
+                    <option value="boing">🌀 Boing! (เด้งตลก)</option>
+                    <option value="pop_alert">🔔 Alert Pop (ปิ๊ง!)</option>
+                    <option value="water_splash">💦 Water Splash (น้ำไหลซู่)</option>
+                    <option value="stomach_growl">💨 Stomach Growl (โครก!)</option>
+                  </select>
+                </div>
+
+                <div class="form-field">
+                  <label for="st-jitter">
+                    ความสั่นกล้อง (Jitter): <strong id="st-jitter-val">3.0</strong>
+                  </label>
+                  <input type="range" id="st-jitter" min="0" max="8" step="0.5" value="3" />
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label for="st-voiceover">สคริปต์เสียงพากย์ (Voiceover Script)</label>
+                <textarea id="st-voiceover" rows="3">จู่ๆ ท้องเจ้ากรรมก็ดันร้อง โครก! ดังลั่นห้อง จนบอสหยุดพูดแล้วหันมามองตาขวาง</textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================= -->
+    <!-- TAB 3: AI PIPELINE ARCHITECTURE                           -->
+    <!-- ========================================================= -->
+    <section id="tab-pipeline" class="tab-panel" role="tabpanel" hidden>
+      <div class="pipeline-hero glass-card">
+        <span class="badge-gold">END-TO-END AUTOMATED SHORTS FACTORY</span>
+        <h1>⚙️ สถาปัตยกรรมระบบผลิตการ์ตูนสั้น AI (Python + Edge-TTS + FFmpeg)</h1>
+        <p>
+          เบื้องหลังการผลิตการ์ตูนแนวตั้ง 1080×1920 30 FPS ทั้ง 4 ตอน (32 ซีน) ตั้งแต่ไฟล์ Storyboard JSON จนถึงไฟล์ .MP4 และ .SRT พร้อมอัปโหลดขึ้น TikTok / YouTube Shorts / Reels
+        </p>
+      </div>
+
+      <!-- Visual 4-Stage Pipeline Flow -->
+      <div class="pipeline-flow-grid">
+        <article class="pipe-card glass-card">
+          <div class="pipe-step">STEP 01</div>
+          <h3>📜 Storyboard JSON Schema</h3>
+          <p>
+            กำหนดโครงสร้างตอนละ 8 ซีนใน <code>storyboard_config.json</code> และ <code>storyboard_ep2..4.json</code> ระบุผู้พูด, มุมกล้อง, <code>board_mode</code>, สีหน้าตัวละคร 3 ตัว (<code>hero_expr</code>, <code>friend_expr</code>, <code>boss_expr</code>), ค่าสั่น <code>jitter</code>, ป๊อปอัป และ SFX
+          </p>
+          <div class="pipe-tags">
+            <span>8 Scenes / EP</span>
+            <span>9:16 Vertical</span>
+            <span>Multicharacter</span>
+          </div>
+        </article>
+
+        <article class="pipe-card glass-card">
+          <div class="pipe-step">STEP 02</div>
+          <h3>🎙️ Edge-TTS + DSP Audio &amp; SRT</h3>
+          <p>
+            สคริปต์ <code>generate_audio_ep4.py</code> เรียก Microsoft Edge Neural Voices (<code>th-TH-NiwatNeural</code> และ <code>th-TH-PremwadeeNeural</code>) ปรับ <code>rate</code>/<code>pitch</code> แยกตามตัวละคร พร้อมผสมเสียงประกอบสังเคราะห์ (SFX + BGM) ลง <code>master_audio.wav</code> และสร้าง <code>.srt</code>
+          </p>
+          <div class="pipe-tags">
+            <span>Edge-TTS Neural</span>
+            <span>44.1kHz Stereo WAV</span>
+            <span>Auto .SRT</span>
+          </div>
+        </article>
+
+        <article class="pipe-card glass-card">
+          <div class="pipe-step">STEP 03</div>
+          <h3>🎨 Character Engine &amp; <code>_split_thai_lifted</code></h3>
+          <p>
+            <code>character_engine.py</code> วาดตัวละครเวกเตอร์ขอบหนา (<code>#231815</code>) ด้วย OpenCV + NumPy พร้อมฟังก์ชันเฉพาะทาง <code>_split_thai_lifted()</code> สำหรับยกวรรณยุกต์ไทย (่ ้ ๊ ๋) เหนือสระบนและสระอำใน Pillow เพื่อไม่ให้สระทับซ้อนกันแม้ไม่มี <code>libraqm</code>
+          </p>
+          <div class="pipe-tags">
+            <span>OpenCV + Pillow</span>
+            <span>Thai Tone Stacking</span>
+            <span>1080×1920 RGB24</span>
+          </div>
+        </article>
+
+        <article class="pipe-card glass-card">
+          <div class="pipe-step">STEP 04</div>
+          <h3>🎬 Multiprocess Pipe → FFmpeg H.264</h3>
+          <p>
+            <code>render_video.py</code> ใช้ <code>ProcessPoolExecutor</code> เรนเดอร์เฟรมขนานทุกคอร์ CPU แล้ว Pipe ไบต์ภาพดิบ <code>rgb24</code> ตรงเข้า <code>ffmpeg</code> เพื่อเข้ารหัสเป็น <code>libx264</code> (CRF 18, <code>yuv420p</code>, <code>+faststart</code>) คู่กับเสียง AAC 192k
+          </p>
+          <div class="pipe-tags">
+            <span>ProcessPoolExecutor</span>
+            <span>H.264 CRF 18</span>
+            <span>Zero Temp Frames</span>
+          </div>
+        </article>
+      </div>
+
+      <!-- Technical Deep Dive + CLI Commands -->
+      <div class="pipeline-bottom-grid">
+        <section class="glass-card pipe-detail-card">
+          <h2>🇹🇭 กลไกแก้ปัญหาวรรณยุกต์ไทยลอยทับ: <code>_split_thai_lifted()</code></h2>
+          <p class="detail-desc">
+            เมื่อเรนเดอร์ฟอนต์ไทยบน Windows/Pillow โดยไม่มี HarfBuzz (<code>raqm</code>) วรรณยุกต์บนสระอิ/อี/อึ/อือ/ไม้หันอากาศ และหน้าสระอำ (<code>\u0E33</code>) มักซ้อนทับกัน Engine จึงแยกตัววรรณยุกต์ออกมาคำนวณตำแหน่งกึ่งกลางพยัญชนะต้นแล้วยกขึ้น <code>-0.18 × font.size</code> พร้อมวาดเส้นขอบสีดำ (<code>stroke_width</code>) รอบตัวอักษรซับไตเติลสีทอง <code>#FFD54F</code>
+          </p>
+          <pre class="code-block"><code>if ch in _TONE_MARKS and (prev_ch in _UPPER_VOWELS or next_ch == "\u0E33"):
+    dy = -int(round(font.size * 0.18))
+    target_cx = (x_right - font.size * 0.14) if next_ch == "\u0E33" else (x_right - cons_w * 0.36)
+    lifted.append((target_cx - glyph_mid, ch, float(dy)))</code></pre>
+        </section>
+
+        <section class="glass-card pipe-detail-card">
+          <h2>💻 คำสั่ง CLI สำหรับรันสายพานการผลิต</h2>
+          <p class="detail-desc">
+            คัดลอกคำสั่งด้านล่างเพื่อทดสอบเรนเดอร์ซีนเดี่ยว สร้างไฟล์เสียงพากย์ หรือคอมไพล์วิดีโอความละเอียดสูง:
+          </p>
+          <div class="cli-list">
+            <div class="cli-item">
+              <div class="cli-label">1. ทดสอบวาดภาพพรีวิวซีนจาก Character Engine</div>
+              <div class="cli-cmd-row">
+                <code>python character_engine.py</code>
+                <button type="button" class="btn-copy" data-copy="python character_engine.py">📋 คัดลอก</button>
+              </div>
+            </div>
+            <div class="cli-item">
+              <div class="cli-label">2. สังเคราะห์เสียงพากย์ Edge-TTS + SFX + ไฟล์ซับ .SRT (EP.4)</div>
+              <div class="cli-cmd-row">
+                <code>python generate_audio_ep4.py</code>
+                <button type="button" class="btn-copy" data-copy="python generate_audio_ep4.py">📋 คัดลอก</button>
+              </div>
+            </div>
+            <div class="cli-item">
+              <div class="cli-label">3. เรนเดอร์วิดีโอ MP4 1080×1920 30FPS แบบ Multiprocess</div>
+              <div class="cli-cmd-row">
+                <code>python render_video.py --storyboard storyboard_ep4.json --manifest audio_manifest_ep4.json --output messy_house_joke_clip.mp4</code>
+                <button
+                  type="button"
+                  class="btn-copy"
+                  data-copy="python render_video.py --storyboard storyboard_ep4.json --manifest audio_manifest_ep4.json --output messy_house_joke_clip.mp4"
+                >📋 คัดลอก</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>
+      🎬 <strong>AGY 2D Cartoon Studio &amp; Shorts Theater</strong> • Built by AI Offices (Office 5 + Office 1) • Responsive Dark Cinema Glassmorphism UI
+    </p>
+  </footer>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- Required Script Load Order -->
+  <script src="data/episodes_data.js"></script>
+  <script src="studio_canvas.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

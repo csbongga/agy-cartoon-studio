@@ -10,6 +10,9 @@
     hero: { label: "🙋‍♂️ สมชาย", cls: "spk-hero" },
     husband: { label: "💼 สามี", cls: "spk-husband" },
     wife: { label: "👩 ภรรยา", cls: "spk-wife" },
+    son: { label: "👦 ลูกชาย", cls: "spk-son" },
+    mom: { label: "🧶 คุณแม่", cls: "spk-mom" },
+    dad: { label: "👓 คุณพ่อ", cls: "spk-dad" },
   };
 
   let episodes = [];
@@ -503,6 +506,41 @@
     }
   }
 
+  function renderSpeakerFilterPills(ep) {
+    const container = document.getElementById("speaker-filter-pills");
+    if (!container || !ep) return;
+
+    const seen = [];
+    (ep.scenes || []).forEach((sc) => {
+      const spk = sc.speaker || "narrator";
+      if (!seen.includes(spk)) seen.push(spk);
+    });
+
+    if (speakerFilter !== "all" && !seen.includes(speakerFilter)) {
+      speakerFilter = "all";
+    }
+
+    const pills = [
+      `<button type="button" class="filter-pill ${speakerFilter === "all" ? "active" : ""}" data-speaker="all">ทั้งหมด</button>`,
+      ...seen.map((spkKey) => {
+        const meta = getSpeakerInfo(spkKey);
+        const activeCls = speakerFilter === spkKey ? "active" : "";
+        return `<button type="button" class="filter-pill ${activeCls}" data-speaker="${escapeHtml(spkKey)}">${escapeHtml(meta.label)}</button>`;
+      }),
+    ];
+
+    container.innerHTML = pills.join("");
+    container.querySelectorAll(".filter-pill").forEach((pill) => {
+      pill.addEventListener("click", () => {
+        speakerFilter = pill.dataset.speaker || "all";
+        container.querySelectorAll(".filter-pill").forEach((p) => {
+          p.classList.toggle("active", p === pill);
+        });
+        renderStoryboardGrid();
+      });
+    });
+  }
+
   function selectEpisode(idx, autoPlay = false) {
     if (!episodes.length) return;
     currentEpIndex = ((idx % episodes.length) + episodes.length) % episodes.length;
@@ -537,6 +575,7 @@
     video.src = ep.video_url;
     video.playbackRate = currentSpeed;
 
+    renderSpeakerFilterPills(ep);
     renderStoryboardGrid();
     updateTelemetryHud(0);
 

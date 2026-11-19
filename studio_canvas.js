@@ -115,6 +115,21 @@
       sfx: "rimshot",
       jitter: 3.5,
     },
+    ep5: {
+      board_mode: "family_sofa_purple",
+      board_title: "ขายหัวเราะ — ละครโรงเรียน",
+      left_char: "dad",
+      left_expr: "shock",
+      right_char: "mom",
+      right_expr: "sofa_chill",
+      popup_text: "แค่พยักหน้า แล้วพูดว่า จ้ะๆ...",
+      popup_style: "speech",
+      subtitle_text: "ไม่ต้องหรอกฮะ ผมเห็นพ่อทำทุกวัน\nแค่พยักหน้า แล้วพูดว่า จ้ะๆ...",
+      voiceover: "ลูกชายรีบตอบแบบใสซื่อ... ไม่ต้องหรอกฮะ ผมเห็นพ่อทำทุกวัน แค่พยักหน้าแล้วพูดว่า จ้ะๆ แม่สั่งให้ทำอะไรก็ทำตาม แค่นี้ง่ายจะตายไปฮะ!",
+      speaker: "son",
+      sfx: "rimshot",
+      jitter: 3.0,
+    },
   };
 
   class StudioCanvasEngine {
@@ -437,6 +452,45 @@
         ctx.lineWidth = 3;
         ctx.strokeStyle = PAL.outline;
         ctx.stroke();
+      } else if (mode === "family_sofa_purple" || mode === "family_sofa_blue") {
+        const isPurple = mode === "family_sofa_purple";
+        const grad = ctx.createLinearGradient(0, 0, 0, 680);
+        grad.addColorStop(0, isPurple ? "#EDE7F6" : "#E3F2FD");
+        grad.addColorStop(1, isPurple ? "#D1C4E9" : "#BBDEFB");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, CANVAS_W, 680);
+
+        // Soft comic sparkles / clouds
+        const drift = Math.sin(t * 1.4) * 10;
+        [
+          [92 + drift, 210, 44],
+          [138 + drift, 202, 52],
+          [432 - drift, 240, 48],
+          [388 - drift, 250, 38],
+        ].forEach(([cx, cy, r]) => {
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255,255,255,0.65)";
+          ctx.fill();
+        });
+
+        // Warm living room floor
+        ctx.fillStyle = "#F3E5AB";
+        ctx.fillRect(0, 665, CANVAS_W, CANVAS_H - 665);
+        ctx.strokeStyle = PAL.outline;
+        ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(0, 665); ctx.lineTo(CANVAS_W, 665); ctx.stroke();
+
+        // Comic header banner
+        this._roundRect(ctx, 56, 56, 428, 68, 16, isPurple ? "#5E35B1" : "#1565C0", PAL.outline, 4.5);
+        this._drawWrappedStrokeText(ctx, title, 270, 90, 396, 24, "700 22px Kanit, sans-serif", "#FFD54F", PAL.outline, 3);
+
+        // Plush Family Sofa (Center-Right)
+        this._roundRect(ctx, 146, 448, 366, 178, 28, isPurple ? "#FFCC80" : "#DCE775", PAL.outline, 5);
+        this._roundRect(ctx, 132, 540, 392, 92, 22, isPurple ? "#FFE0B2" : "#E6EE9C", PAL.outline, 5);
+        // Sofa armrest
+        this._roundRect(ctx, 128, 504, 48, 120, 18, isPurple ? "#FFB74D" : "#C0CA33", PAL.outline, 4.5);
+        this._roundRect(ctx, 476, 504, 48, 120, 18, isPurple ? "#FFB74D" : "#C0CA33", PAL.outline, 4.5);
       } else {
         // couple_blue_bg
         const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
@@ -485,8 +539,12 @@
         jacket = "#37474F";
         tieColor = PAL.husbandTie;
         hairColor = "#263238";
-      } else if (charType === "somchai") {
-        jacket = PAL.yellowShirt;
+      } else if (charType === "dad") {
+        jacket = "#42A5F5";
+        tieColor = "#1565C0";
+        hairColor = "#263238";
+      } else if (charType === "somchai" || charType === "son") {
+        jacket = charType === "son" ? "#66BB6A" : PAL.yellowShirt;
         tieColor = PAL.pinkTie;
         hairColor = "#1F2937";
       }
@@ -591,13 +649,20 @@
         });
       }
 
-      // Boss white-rimmed glasses
-      if (charType === "boss") {
-        this._roundRect(ctx, cx - 42, eyeY - 15, 36, 28, 7, "transparent", "#FFFFFF", 4.5);
-        this._roundRect(ctx, cx + 6, eyeY - 15, 36, 28, 7, "transparent", "#FFFFFF", 4.5);
-        ctx.strokeStyle = "#FFFFFF";
+      // Boss / Dad glasses
+      if (charType === "boss" || charType === "dad") {
+        const rimCol = charType === "dad" ? PAL.outline : "#FFFFFF";
+        this._roundRect(ctx, cx - 42, eyeY - 15, 36, 28, 7, "transparent", rimCol, 4.5);
+        this._roundRect(ctx, cx + 6, eyeY - 15, 36, 28, 7, "transparent", rimCol, 4.5);
+        ctx.strokeStyle = rimCol;
         ctx.lineWidth = 4;
         ctx.beginPath(); ctx.moveTo(cx - 6, eyeY - 2); ctx.lineTo(cx + 6, eyeY - 2); ctx.stroke();
+      }
+
+      // Blue Book for Dad
+      if (charType === "dad") {
+        this._roundRect(ctx, cx - 34, cy + 48, 86, 62, 8, "#1E88E5", PAL.outline, 4);
+        this._roundRect(ctx, cx - 22, cy + 56, 62, 12, 4, "#90CAF9", null, 0);
       }
 
       // Eyebrows
@@ -665,9 +730,14 @@
 
       let shirt = PAL.yellowShirt;
       let tie = PAL.pinkTie;
-      let isWife = charType === "wife";
-      if (isWife) {
+      let isWife = charType === "wife" || charType === "mom";
+      if (charType === "mom") {
+        shirt = "#F48FB1";
+      } else if (isWife) {
         shirt = PAL.wifeOrange;
+      } else if (charType === "son") {
+        shirt = "#66BB6A";
+        tie = "#FFD54F";
       } else if (charType === "coworker") {
         shirt = "#E3F2FD";
         tie = PAL.chartBlue;
@@ -1032,6 +1102,186 @@
       );
     }
 
+    _drawFamilySofaCast(ctx, t, blink) {
+      const dadExpr = this.state.left_expr;
+      const momExpr = this.state.right_expr;
+
+      // 1) Dad sitting on right side of sofa holding blue book
+      {
+        const bob = Math.sin(t * 2.5) * 2;
+        const shakeX = dadExpr === "fuming" ? Math.sin(t * 34) * 2.5 : 0;
+        const dx = 408 + shakeX;
+        const dy = 485 + bob;
+        ctx.save();
+        // Body
+        this._roundRect(ctx, dx - 46, dy - 6, 92, 114, 24, "#42A5F5", PAL.outline, 4.5);
+        // Blue book
+        this._roundRect(ctx, dx - 54, dy + 32, 76, 56, 7, "#1565C0", PAL.outline, 4);
+        this._roundRect(ctx, dx - 42, dy + 40, 52, 10, 3, "#90CAF9", null, 0);
+        // Head
+        const hy = dy - 56;
+        ctx.beginPath();
+        ctx.arc(dx, hy, 48, 0, Math.PI * 2);
+        ctx.fillStyle = dadExpr === "fuming" ? "#F79B84" : PAL.skin;
+        ctx.fill();
+        ctx.lineWidth = 4.5;
+        ctx.strokeStyle = PAL.outline;
+        ctx.stroke();
+        // Hair
+        ctx.beginPath();
+        ctx.arc(dx, hy - 10, 48, Math.PI * 0.98, Math.PI * 2.02);
+        ctx.fillStyle = "#263238";
+        ctx.fill();
+        ctx.stroke();
+        // Glasses + Eyes
+        const ey = hy - 4;
+        if (blink && dadExpr !== "shock") {
+          ctx.lineWidth = 3.5;
+          ctx.beginPath();
+          ctx.moveTo(dx - 26, ey); ctx.lineTo(dx - 10, ey);
+          ctx.moveTo(dx + 10, ey); ctx.lineTo(dx + 26, ey);
+          ctx.stroke();
+        } else {
+          [-17, 17].forEach((ox) => {
+            ctx.beginPath();
+            ctx.arc(dx + ox, ey, dadExpr === "shock" ? 10 : 7.5, 0, Math.PI * 2);
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = PAL.outline;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(dx + ox - 1, ey, dadExpr === "shock" ? 2.8 : 3.8, 0, Math.PI * 2);
+            ctx.fillStyle = PAL.outline;
+            ctx.fill();
+          });
+        }
+        this._roundRect(ctx, dx - 31, ey - 12, 28, 22, 6, "transparent", PAL.outline, 3.5);
+        this._roundRect(ctx, dx + 3, ey - 12, 28, 22, 6, "transparent", PAL.outline, 3.5);
+        // Mouth
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        if (dadExpr === "shock") {
+          ctx.ellipse(dx, hy + 24, 11, 13, 0, 0, Math.PI * 2);
+          ctx.fillStyle = "#801822";
+          ctx.fill();
+          ctx.stroke();
+        } else {
+          ctx.moveTo(dx - 12, hy + 22);
+          ctx.lineTo(dx + 12, hy + 22);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // 2) Mom sitting center of sofa knitting pink yarn
+      {
+        const bob = Math.sin(t * 2.8 + 0.8) * 2;
+        const mx = 268;
+        const my = 492 + bob;
+        ctx.save();
+        this._roundRect(ctx, mx - 44, my - 4, 88, 110, 24, "#EC407A", PAL.outline, 4.5);
+        // Pink yarn ball & needles
+        ctx.beginPath();
+        ctx.arc(mx - 10, my + 48, 20, 0, Math.PI * 2);
+        ctx.fillStyle = "#F48FB1";
+        ctx.fill();
+        ctx.lineWidth = 3.5;
+        ctx.strokeStyle = PAL.outline;
+        ctx.stroke();
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(mx - 36, my + 30); ctx.lineTo(mx + 14, my + 60);
+        ctx.moveTo(mx + 18, my + 30); ctx.lineTo(mx - 28, my + 60);
+        ctx.stroke();
+
+        const hy = my - 52;
+        ctx.beginPath();
+        ctx.arc(mx, hy, 45, 0, Math.PI * 2);
+        ctx.fillStyle = PAL.skin;
+        ctx.fill();
+        ctx.lineWidth = 4.5;
+        ctx.stroke();
+        // Hair bun + bangs
+        ctx.beginPath();
+        ctx.arc(mx, hy - 44, 18, 0, Math.PI * 2);
+        ctx.fillStyle = "#212121";
+        ctx.fill();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(mx, hy - 8, 45, Math.PI * 0.92, Math.PI * 2.08);
+        ctx.fill();
+        ctx.stroke();
+
+        // Smug / happy eyes
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        if (momExpr === "turn_laugh") {
+          ctx.arc(mx - 15, hy - 4, 8, Math.PI, 0);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(mx + 15, hy - 4, 8, Math.PI, 0);
+          ctx.stroke();
+        } else {
+          ctx.moveTo(mx - 22, hy - 6); ctx.lineTo(mx - 8, hy - 6);
+          ctx.moveTo(mx + 8, hy - 6); ctx.lineTo(mx + 22, hy - 6);
+          ctx.stroke();
+        }
+        // Smile
+        ctx.beginPath();
+        ctx.arc(mx, hy + 12, 12, 0.1 * Math.PI, 0.9 * Math.PI);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 3) Son on left leaning excitedly onto sofa arm
+      {
+        const bob = Math.sin(t * 4.5) * 4;
+        const sx = 112;
+        const sy = 552 + bob;
+        ctx.save();
+        this._roundRect(ctx, sx - 38, sy - 4, 76, 98, 22, "#66BB6A", PAL.outline, 4.5);
+        // Raised excited arm
+        this._roundRect(ctx, sx + 26, sy - 42, 18, 56, 9, "#66BB6A", PAL.outline, 4);
+        const hy = sy - 46;
+        ctx.beginPath();
+        ctx.arc(sx, hy, 40, 0, Math.PI * 2);
+        ctx.fillStyle = PAL.skin;
+        ctx.fill();
+        ctx.lineWidth = 4.5;
+        ctx.strokeStyle = PAL.outline;
+        ctx.stroke();
+        // Buzzcut hair
+        ctx.beginPath();
+        ctx.arc(sx, hy - 8, 40, Math.PI * 1.02, Math.PI * 1.98);
+        ctx.fillStyle = "#1F2937";
+        ctx.fill();
+        ctx.stroke();
+        // Big bright eyes
+        [-14, 14].forEach((ox) => {
+          ctx.beginPath();
+          ctx.arc(sx + ox, hy - 4, 7, 0, Math.PI * 2);
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fill();
+          ctx.lineWidth = 3;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(sx + ox + 1.5, hy - 4, 3.5, 0, Math.PI * 2);
+          ctx.fillStyle = PAL.outline;
+          ctx.fill();
+        });
+        // Happy talking mouth
+        ctx.beginPath();
+        ctx.arc(sx + 2, hy + 12, 12, 0, Math.PI);
+        ctx.closePath();
+        ctx.fillStyle = "#EC407A";
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
     renderFrame() {
       if (!this.ctx) return;
       const ctx = this.ctx;
@@ -1049,8 +1299,12 @@
       }
 
       this._drawBackground(ctx, t);
-      this._drawLeftCharacter(ctx, t, blink);
-      this._drawRightCharacter(ctx, t, blink);
+      if (this.state.board_mode === "family_sofa_purple" || this.state.board_mode === "family_sofa_blue") {
+        this._drawFamilySofaCast(ctx, t, blink);
+      } else {
+        this._drawLeftCharacter(ctx, t, blink);
+        this._drawRightCharacter(ctx, t, blink);
+      }
       this._drawPopup(ctx, t);
       ctx.restore();
 
@@ -1198,6 +1452,15 @@
       } else if (spk === "wife") {
         utter.pitch = 1.28;
         utter.rate = 1.04;
+      } else if (spk === "son") {
+        utter.pitch = 1.45;
+        utter.rate = 1.1;
+      } else if (spk === "mom") {
+        utter.pitch = 1.22;
+        utter.rate = 1.04;
+      } else if (spk === "dad") {
+        utter.pitch = 0.82;
+        utter.rate = 1.04;
       } else {
         utter.pitch = 1.0;
         utter.rate = 1.06;
@@ -1231,6 +1494,9 @@
         hero: { voice: "th-TH-NiwatNeural", rate: "+12%", pitch: "+8Hz" },
         husband: { voice: "th-TH-NiwatNeural", rate: "+6%", pitch: "-8Hz" },
         wife: { voice: "th-TH-PremwadeeNeural", rate: "+6%", pitch: "+2Hz" },
+        son: { voice: "th-TH-NiwatNeural", rate: "+12%", pitch: "+18Hz" },
+        mom: { voice: "th-TH-PremwadeeNeural", rate: "+6%", pitch: "+0Hz" },
+        dad: { voice: "th-TH-NiwatNeural", rate: "+8%", pitch: "-10Hz" },
       };
       const vConf = voiceMap[this.state.speaker] || voiceMap.narrator;
 

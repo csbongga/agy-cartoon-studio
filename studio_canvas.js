@@ -130,6 +130,21 @@
       sfx: "rimshot",
       jitter: 3.0,
     },
+    ep6: {
+      board_mode: "bar_counter_purple",
+      board_title: "มาราธอน 42 กิโลเมตร!!",
+      left_char: "boss",
+      left_expr: "shock",
+      right_char: "somchai",
+      right_expr: "holding_laugh",
+      popup_text: "ร้อยเมตรแรกผมนำ แต่หลังจากนั้น...",
+      popup_style: "speech",
+      subtitle_text: "\"ไม่ใช่..ไม่ได้.. คือผมวิ่งมาราธอน..\"\n\"ร้อยเมตรแรกผมนำ.. แต่หลังจากนั้น...\"",
+      voiceover: "หนุ่มนักวิ่งหัวเราะแหะๆ แล้วรีบแก้ตัว... ไม่ใช่ ไม่ได้เหรียญ คือผมวิ่งมาราธอน ร้อยเมตรแรกผมนำ แต่หลังจากนั้น...",
+      speaker: "runner",
+      sfx: "rimshot",
+      jitter: 3.0,
+    },
   };
 
   class StudioCanvasEngine {
@@ -491,6 +506,34 @@
         // Sofa armrest
         this._roundRect(ctx, 128, 504, 48, 120, 18, isPurple ? "#FFB74D" : "#C0CA33", PAL.outline, 4.5);
         this._roundRect(ctx, 476, 504, 48, 120, 18, isPurple ? "#FFB74D" : "#C0CA33", PAL.outline, 4.5);
+      } else if (mode === "bar_counter_warm" || mode === "bar_counter_blue" || mode === "bar_counter_purple") {
+        const bgMap = {
+          bar_counter_warm: ["#FFF3E0", "#FFE0B2", "#E65100"],
+          bar_counter_blue: ["#E3F2FD", "#BBDEFB", "#1565C0"],
+          bar_counter_purple: ["#EDE7F6", "#D1C4E9", "#5E35B1"],
+        };
+        const [topC, botC, hdrC] = bgMap[mode];
+        const grad = ctx.createLinearGradient(0, 0, 0, 720);
+        grad.addColorStop(0, topC);
+        grad.addColorStop(1, botC);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, CANVAS_W, 720);
+
+        // Decorative bar shelves in background
+        this._roundRect(ctx, 46, 175, 448, 14, 6, "#8D6E63", PAL.outline, 3.5);
+        [78, 118, 158, 372, 412, 446].forEach((bx, bi) => {
+          const bh = 42 + (bi % 2) * 14;
+          const bCol = ["#4FC3F7", "#FFD54F", "#81C784", "#F48FB1", "#FFB74D", "#90CAF9"][bi];
+          this._roundRect(ctx, bx, 175 - bh, 24, bh, 6, bCol, PAL.outline, 3);
+        });
+
+        // Lower floor behind counter
+        ctx.fillStyle = "#4E342E";
+        ctx.fillRect(0, 680, CANVAS_W, CANVAS_H - 680);
+
+        // Header banner
+        this._roundRect(ctx, 56, 56, 428, 68, 16, hdrC, PAL.outline, 4.5);
+        this._drawWrappedStrokeText(ctx, title, 270, 90, 396, 24, "700 22px Kanit, sans-serif", "#FFD54F", PAL.outline, 3);
       } else {
         // couple_blue_bg
         const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
@@ -1282,6 +1325,255 @@
       }
     }
 
+    _drawBarCounterCast(ctx, t, blink) {
+      const expr = this.state.left_expr;
+      const isCringe = this.state.board_mode === "bar_counter_purple" || expr === "shock" || expr === "fuming";
+      const isGold = this.state.board_mode === "bar_counter_blue";
+
+      // 1) Left Friend (Regent Pompadour Hair, Orange Polo)
+      {
+        const bob = Math.sin(t * 3.1) * 2.5;
+        const fx = 104;
+        const fy = 524 + bob;
+        ctx.save();
+        this._roundRect(ctx, fx - 44, fy - 4, 88, 118, 22, "#FB8C00", PAL.outline, 4.5);
+        const hy = fy - 54;
+        ctx.beginPath();
+        ctx.arc(fx, hy, 44, 0, Math.PI * 2);
+        ctx.fillStyle = PAL.skin;
+        ctx.fill();
+        ctx.lineWidth = 4.5;
+        ctx.strokeStyle = PAL.outline;
+        ctx.stroke();
+
+        // Regent Pompadour Hair
+        ctx.beginPath();
+        ctx.moveTo(fx - 42, hy - 12);
+        ctx.quadraticCurveTo(fx - 38, hy - 70, fx + 24, hy - 66);
+        ctx.quadraticCurveTo(fx + 56, hy - 56, fx + 44, hy - 22);
+        ctx.lineTo(fx - 32, hy - 18);
+        ctx.closePath();
+        ctx.fillStyle = "#212121";
+        ctx.fill();
+        ctx.stroke();
+
+        // Eyes & Mouth
+        const ey = hy - 4;
+        ctx.lineWidth = 3.5;
+        if (isCringe) {
+          // >< cringe eyes
+          ctx.beginPath();
+          ctx.moveTo(fx - 22, ey - 6); ctx.lineTo(fx - 10, ey); ctx.lineTo(fx - 22, ey + 6);
+          ctx.moveTo(fx + 22, ey - 6); ctx.lineTo(fx + 10, ey); ctx.lineTo(fx + 22, ey + 6);
+          ctx.stroke();
+        } else if (blink) {
+          ctx.beginPath();
+          ctx.moveTo(fx - 24, ey); ctx.lineTo(fx - 8, ey);
+          ctx.moveTo(fx + 8, ey); ctx.lineTo(fx + 24, ey);
+          ctx.stroke();
+        } else {
+          [-14, 14].forEach((ox) => {
+            ctx.beginPath();
+            ctx.arc(fx + ox, ey, 6.5, 0, Math.PI * 2);
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fill();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(fx + ox + 1.5, ey, 3.2, 0, Math.PI * 2);
+            ctx.fillStyle = PAL.outline;
+            ctx.fill();
+          });
+        }
+        ctx.beginPath();
+        ctx.arc(fx, hy + 18, 10, isCringe ? Math.PI : 0.1 * Math.PI, isCringe ? 0 : 0.9 * Math.PI);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 2) Center Runner (Headband + Teal/Blue Sport Tee)
+      {
+        const bob = Math.sin(t * 3.8 + 0.7) * 3;
+        const rx = 270;
+        const ry = 516 + bob;
+        ctx.save();
+        this._roundRect(ctx, rx - 48, ry - 4, 96, 126, 24, "#26A69A", PAL.outline, 4.5);
+        // White collar stripe
+        this._roundRect(ctx, rx - 18, ry - 4, 36, 14, 6, "#FFFFFF", PAL.outline, 3);
+
+        const hy = ry - 56;
+        ctx.beginPath();
+        ctx.arc(rx, hy, 46, 0, Math.PI * 2);
+        ctx.fillStyle = PAL.skin;
+        ctx.fill();
+        ctx.lineWidth = 4.5;
+        ctx.strokeStyle = PAL.outline;
+        ctx.stroke();
+
+        // Spiky hair + Red Sport Headband
+        ctx.beginPath();
+        ctx.arc(rx, hy - 10, 46, Math.PI * 0.96, Math.PI * 2.04);
+        ctx.fillStyle = "#1F2937";
+        ctx.fill();
+        ctx.stroke();
+        this._roundRect(ctx, rx - 45, hy - 28, 90, 14, 6, "#EF5350", PAL.outline, 3.5);
+
+        // Eyes
+        const ey = hy - 2;
+        if (blink) {
+          ctx.lineWidth = 3.5;
+          ctx.beginPath();
+          ctx.moveTo(rx - 24, ey); ctx.lineTo(rx - 8, ey);
+          ctx.moveTo(rx + 8, ey); ctx.lineTo(rx + 24, ey);
+          ctx.stroke();
+        } else {
+          [-16, 16].forEach((ox) => {
+            ctx.beginPath();
+            ctx.arc(rx + ox, ey, 7, 0, Math.PI * 2);
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(rx + ox, ey, 3.5, 0, Math.PI * 2);
+            ctx.fillStyle = PAL.outline;
+            ctx.fill();
+          });
+        }
+        // Sheepish / Proud Smile + Blush
+        if (isCringe) {
+          ctx.fillStyle = "rgba(229, 115, 115, 0.5)";
+          ctx.beginPath(); ctx.ellipse(rx - 26, hy + 12, 9, 5, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(rx + 26, hy + 12, 9, 5, 0, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.beginPath();
+        ctx.arc(rx, hy + 14, 14, 0.05 * Math.PI, 0.95 * Math.PI);
+        ctx.fillStyle = "#EC407A";
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 3) Right Friend (Plaid Shirt + Tie)
+      {
+        const bob = Math.sin(t * 3.3 + 1.4) * 2.5;
+        const px = 436;
+        const py = 524 + bob;
+        ctx.save();
+        this._roundRect(ctx, px - 44, py - 4, 88, 118, 22, "#42A5F5", PAL.outline, 4.5);
+        // Plaid grid lines on shirt
+        ctx.strokeStyle = "rgba(21, 101, 192, 0.45)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(px - 20, py); ctx.lineTo(px - 20, py + 100);
+        ctx.moveTo(px + 20, py); ctx.lineTo(px + 20, py + 100);
+        ctx.moveTo(px - 40, py + 32); ctx.lineTo(px + 40, py + 32);
+        ctx.moveTo(px - 40, py + 66); ctx.lineTo(px + 40, py + 66);
+        ctx.stroke();
+        // Tie
+        ctx.beginPath();
+        ctx.moveTo(px - 7, py); ctx.lineTo(px + 7, py);
+        ctx.lineTo(px + 9, py + 54); ctx.lineTo(px, py + 68); ctx.lineTo(px - 9, py + 54);
+        ctx.closePath();
+        ctx.fillStyle = "#D32F2F";
+        ctx.fill();
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = PAL.outline;
+        ctx.stroke();
+
+        const hy = py - 54;
+        ctx.beginPath();
+        ctx.arc(px, hy, 44, 0, Math.PI * 2);
+        ctx.fillStyle = PAL.skin;
+        ctx.fill();
+        ctx.lineWidth = 4.5;
+        ctx.strokeStyle = PAL.outline;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(px, hy - 12, 44, Math.PI * 0.98, Math.PI * 2.02);
+        ctx.fillStyle = "#37474F";
+        ctx.fill();
+        ctx.stroke();
+
+        const ey = hy - 4;
+        ctx.lineWidth = 3.5;
+        if (isCringe) {
+          ctx.beginPath();
+          ctx.moveTo(px - 22, ey - 6); ctx.lineTo(px - 10, ey); ctx.lineTo(px - 22, ey + 6);
+          ctx.moveTo(px + 22, ey - 6); ctx.lineTo(px + 10, ey); ctx.lineTo(px + 22, ey + 6);
+          ctx.stroke();
+        } else if (isGold) {
+          // Starry / wide excited eyes
+          [-14, 14].forEach((ox) => {
+            ctx.beginPath();
+            ctx.arc(px + ox, ey, 8, 0, Math.PI * 2);
+            ctx.fillStyle = "#FFF59D";
+            ctx.fill();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(px + ox - 1, ey, 3.5, 0, Math.PI * 2);
+            ctx.fillStyle = PAL.outline;
+            ctx.fill();
+          });
+        } else {
+          [-14, 14].forEach((ox) => {
+            ctx.beginPath();
+            ctx.arc(px + ox, ey, 6.5, 0, Math.PI * 2);
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fill();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(px + ox - 1.5, ey, 3.2, 0, Math.PI * 2);
+            ctx.fillStyle = PAL.outline;
+            ctx.fill();
+          });
+        }
+        ctx.beginPath();
+        ctx.arc(px, hy + 18, 10, isCringe ? Math.PI : 0.1 * Math.PI, isCringe ? 0 : 0.9 * Math.PI);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 4) Foreground Bar Counter + Foamy Mug + Soda Glasses with Straws
+      this._roundRect(ctx, -8, 616, CANVAS_W + 16, 26, 8, "#A1887F", PAL.outline, 4.5);
+      this._roundRect(ctx, -8, 642, CANVAS_W + 16, 120, 0, "#6D4C41", PAL.outline, 4.5);
+
+      // Foamy Mug (Left)
+      this._roundRect(ctx, 74, 560, 44, 58, 8, "#FFB300", PAL.outline, 3.5);
+      this._roundRect(ctx, 118, 574, 16, 28, 7, "transparent", PAL.outline, 3.5);
+      // Overflowing Foam
+      [82, 96, 110].forEach((fx, fi) => {
+        ctx.beginPath();
+        ctx.arc(fx, 558 - (fi % 2) * 4, 11, 0, Math.PI * 2);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = PAL.outline;
+        ctx.stroke();
+      });
+
+      // Soda Glasses with Straws (Center & Right)
+      [
+        [252, "#4FC3F7", "#EF5350"],
+        [414, "#81C784", "#FFD54F"],
+      ].forEach(([gx, liqCol, strawCol]) => {
+        ctx.save();
+        ctx.strokeStyle = strawCol;
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(gx + 22, 578);
+        ctx.lineTo(gx + 34, 536);
+        ctx.stroke();
+        this._roundRect(ctx, gx, 564, 34, 54, 7, liqCol, PAL.outline, 3.5);
+        // Fizz bubbles
+        const fy = 594 - ((t * 36) % 24);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.beginPath(); ctx.arc(gx + 12, fy, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(gx + 22, fy + 8, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      });
+    }
+
     renderFrame() {
       if (!this.ctx) return;
       const ctx = this.ctx;
@@ -1301,6 +1593,12 @@
       this._drawBackground(ctx, t);
       if (this.state.board_mode === "family_sofa_purple" || this.state.board_mode === "family_sofa_blue") {
         this._drawFamilySofaCast(ctx, t, blink);
+      } else if (
+        this.state.board_mode === "bar_counter_warm" ||
+        this.state.board_mode === "bar_counter_blue" ||
+        this.state.board_mode === "bar_counter_purple"
+      ) {
+        this._drawBarCounterCast(ctx, t, blink);
       } else {
         this._drawLeftCharacter(ctx, t, blink);
         this._drawRightCharacter(ctx, t, blink);
@@ -1461,6 +1759,15 @@
       } else if (spk === "dad") {
         utter.pitch = 0.82;
         utter.rate = 1.04;
+      } else if (spk === "friend_left") {
+        utter.pitch = 0.9;
+        utter.rate = 1.04;
+      } else if (spk === "runner") {
+        utter.pitch = 1.18;
+        utter.rate = 1.08;
+      } else if (spk === "friend_right") {
+        utter.pitch = 0.78;
+        utter.rate = 1.06;
       } else {
         utter.pitch = 1.0;
         utter.rate = 1.06;
@@ -1497,6 +1804,9 @@
         son: { voice: "th-TH-NiwatNeural", rate: "+12%", pitch: "+18Hz" },
         mom: { voice: "th-TH-PremwadeeNeural", rate: "+6%", pitch: "+0Hz" },
         dad: { voice: "th-TH-NiwatNeural", rate: "+8%", pitch: "-10Hz" },
+        friend_left: { voice: "th-TH-NiwatNeural", rate: "+8%", pitch: "-6Hz" },
+        runner: { voice: "th-TH-NiwatNeural", rate: "+10%", pitch: "+8Hz" },
+        friend_right: { voice: "th-TH-NiwatNeural", rate: "+10%", pitch: "-12Hz" },
       };
       const vConf = voiceMap[this.state.speaker] || voiceMap.narrator;
 

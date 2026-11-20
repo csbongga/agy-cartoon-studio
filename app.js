@@ -13,6 +13,9 @@
     son: { label: "👦 ลูกชาย", cls: "spk-son" },
     mom: { label: "🧶 คุณแม่", cls: "spk-mom" },
     dad: { label: "👓 คุณพ่อ", cls: "spk-dad" },
+    friend_left: { label: "🕺 เพื่อนผมรีเจ้นท์", cls: "spk-friend_left" },
+    runner: { label: "🏃‍♂️ หนุ่มนักวิ่ง", cls: "spk-runner" },
+    friend_right: { label: "👔 เพื่อนเสื้อสก๊อต", cls: "spk-friend_right" },
   };
 
   let episodes = [];

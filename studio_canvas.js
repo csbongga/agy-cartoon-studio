@@ -160,6 +160,21 @@
       sfx: "rimshot",
       jitter: 3.0,
     },
+    ep8: {
+      board_mode: "car_wife_speed_drive",
+      board_title: "ตาสว่าง 1000%!!",
+      left_char: "husband",
+      left_expr: "shock",
+      right_char: "wife",
+      right_expr: "sofa_chill",
+      popup_text: "หยึย!! ใครจะกล้าหลับลงล่ะ!!",
+      popup_style: "shout",
+      subtitle_text: "สามีตาถลน ร้องในใจ \"หยึย!!\"\nขับซิ่งขนาดนี้ ใครจะไปกล้าหลับลงล่ะ!!",
+      voiceover: "สามีนั่งตัวเกร็งจิกเบาะ ตาถลนเท่าไข่ห่าน ร้องในใจได้คำเดียว... หยึย ขับซิ่งขนาดนี้ ใครจะไปกล้าหลับลงล่ะจ๊ะแม่คุณ!",
+      speaker: "husband",
+      sfx: "car_tire_screech",
+      jitter: 5.5,
+    },
   };
 
   class StudioCanvasEngine {
@@ -587,6 +602,73 @@
         // Header banner
         this._roundRect(ctx, 56, 56, 428, 68, 16, hdrC, PAL.outline, 4.5);
         this._drawWrappedStrokeText(ctx, title, 270, 90, 396, 24, "700 22px Kanit, sans-serif", "#FFD54F", PAL.outline, 3);
+      } else if (
+        mode === "car_husband_drive" ||
+        mode === "highway_pull_over" ||
+        mode === "car_wife_speed_drive"
+      ) {
+        if (mode === "highway_pull_over") {
+          // Roadside highway scene
+          const sky = ctx.createLinearGradient(0, 0, 0, 480);
+          sky.addColorStop(0, "#81D4FA");
+          sky.addColorStop(1, "#E1F5FE");
+          ctx.fillStyle = sky;
+          ctx.fillRect(0, 0, CANVAS_W, 480);
+          // Green roadside grass + asphalt highway
+          ctx.fillStyle = "#81C784";
+          ctx.fillRect(0, 440, CANVAS_W, 120);
+          ctx.fillStyle = "#455A64";
+          ctx.fillRect(0, 520, CANVAS_W, 440);
+          // Dashed yellow highway lines
+          ctx.fillStyle = "#FFD54F";
+          for (let lx = 24; lx < CANVAS_W; lx += 88) {
+            ctx.fillRect(lx, 635, 50, 12);
+          }
+          // Header banner
+          this._roundRect(ctx, 56, 56, 428, 68, 16, "#1565C0", PAL.outline, 4.5);
+          this._drawWrappedStrokeText(ctx, title, 270, 90, 396, 24, "700 22px Kanit, sans-serif", "#FFD54F", PAL.outline, 3);
+        } else {
+          // Windshield view from front of Red Car
+          const isFast = mode === "car_wife_speed_drive";
+          const sky = ctx.createLinearGradient(0, 0, 0, 520);
+          sky.addColorStop(0, isFast ? "#FF7043" : "#64B5F6");
+          sky.addColorStop(1, isFast ? "#FFE082" : "#E3F2FD");
+          ctx.fillStyle = sky;
+          ctx.fillRect(0, 0, CANVAS_W, 960);
+
+          // Speed lines outside windshield when Wife drives fast!
+          if (isFast) {
+            ctx.save();
+            ctx.strokeStyle = "rgba(255,255,255,0.65)";
+            ctx.lineWidth = 4;
+            for (let i = 0; i < 16; i++) {
+              const ang = (i / 16) * Math.PI * 2;
+              const offset = ((t * 480 + i * 37) % 180);
+              const x1 = 270 + Math.cos(ang) * (120 + offset);
+              const y1 = 360 + Math.sin(ang) * (120 + offset);
+              const x2 = 270 + Math.cos(ang) * (240 + offset);
+              const y2 = 360 + Math.sin(ang) * (240 + offset);
+              ctx.beginPath();
+              ctx.moveTo(x1, y1);
+              ctx.lineTo(x2, y2);
+              ctx.stroke();
+            }
+            ctx.restore();
+          }
+
+          // Red Car Roof & Windshield Frame
+          this._roundRect(ctx, 22, 165, CANVAS_W - 44, 520, 42, "#D32F2F", PAL.outline, 6);
+          this._roundRect(ctx, 44, 212, CANVAS_W - 88, 395, 28, isFast ? "#FFF3E0" : "#E1F5FE", PAL.outline, 5);
+          // Car side mirrors
+          this._roundRect(ctx, 4, 468, 34, 46, 10, "#B71C1C", PAL.outline, 4);
+          this._roundRect(ctx, CANVAS_W - 38, 468, 34, 46, 10, "#B71C1C", PAL.outline, 4);
+          // Rearview mirror top center
+          this._roundRect(ctx, 215, 224, 110, 26, 8, "#263238", PAL.outline, 3.5);
+
+          // Header banner
+          this._roundRect(ctx, 56, 56, 428, 68, 16, isFast ? "#C62828" : "#1565C0", PAL.outline, 4.5);
+          this._drawWrappedStrokeText(ctx, title, 270, 90, 396, 24, "700 22px Kanit, sans-serif", "#FFD54F", PAL.outline, 3);
+        }
       } else {
         // couple_blue_bg
         const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
@@ -1807,6 +1889,243 @@
       });
     }
 
+    _drawCarWindshieldCast(ctx, t, blink) {
+      const mode = this.state.board_mode;
+
+      if (mode === "highway_pull_over") {
+        // Parked Red Sedan on shoulder + Wife & Husband swapping seats
+        const carX = 270;
+        const carY = 530 + Math.sin(t * 2) * 1.5;
+        ctx.save();
+        // Car body
+        this._roundRect(ctx, carX - 155, carY - 34, 310, 74, 24, "#D32F2F", PAL.outline, 5);
+        this._roundRect(ctx, carX - 96, carY - 82, 192, 54, 18, "#E53935", PAL.outline, 4.5);
+        // Car windows
+        this._roundRect(ctx, carX - 80, carY - 70, 72, 34, 8, "#E1F5FE", PAL.outline, 3.5);
+        this._roundRect(ctx, carX + 8, carY - 70, 72, 34, 8, "#E1F5FE", PAL.outline, 3.5);
+        // Blinking hazard lights
+        const hazardOn = Math.floor(t * 3) % 2 === 0;
+        ctx.fillStyle = hazardOn ? "#FFB300" : "#795548";
+        ctx.beginPath(); ctx.arc(carX - 142, carY + 2, 10, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(carX + 142, carY + 2, 10, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        // Wheels
+        [carX - 95, carX + 95].forEach((wx) => {
+          ctx.beginPath(); ctx.arc(wx, carY + 42, 28, 0, Math.PI * 2);
+          ctx.fillStyle = "#263238"; ctx.fill(); ctx.lineWidth = 4; ctx.stroke();
+          ctx.beginPath(); ctx.arc(wx, carY + 42, 12, 0, Math.PI * 2);
+          ctx.fillStyle = "#B0BEC5"; ctx.fill();
+        });
+        ctx.restore();
+
+        // Wife & Husband standing beside car
+        this._drawLeftCharacter(ctx, t, blink);
+        this._drawRightCharacter(ctx, t, blink);
+        return;
+      }
+
+      const isWifeSpeed = mode === "car_wife_speed_drive";
+      const vibY = isWifeSpeed ? Math.sin(t * 42) * 3.5 : Math.sin(t * 4) * 1.5;
+
+      // Car Seat Headrests inside windshield
+      this._roundRect(ctx, 98, 396, 122, 175, 28, "#37474F", PAL.outline, 4.5);
+      this._roundRect(ctx, 320, 396, 122, 175, 28, "#37474F", PAL.outline, 4.5);
+
+      if (!isWifeSpeed) {
+        // Scene 1-2: Sleepy Husband driving (Left seat) + Worried Wife (Right seat)
+        // Husband (Driver)
+        {
+          const hx = 159;
+          const hy = 468 + Math.sin(t * 2.2) * 4;
+          ctx.save();
+          this._roundRect(ctx, hx - 46, hy + 26, 92, 92, 22, "#5C6BC0", PAL.outline, 4.5);
+          ctx.beginPath();
+          ctx.arc(hx, hy - 14, 46, 0, Math.PI * 2);
+          ctx.fillStyle = PAL.skin;
+          ctx.fill();
+          ctx.lineWidth = 4.5;
+          ctx.strokeStyle = PAL.outline;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(hx, hy - 26, 46, Math.PI * 0.96, Math.PI * 2.04);
+          ctx.fillStyle = "#263238";
+          ctx.fill();
+          ctx.stroke();
+          // Droopy sleepy eyes
+          ctx.lineWidth = 3.5;
+          ctx.beginPath();
+          ctx.arc(hx - 16, hy - 16, 9, 0.1 * Math.PI, 0.9 * Math.PI);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(hx + 16, hy - 16, 9, 0.1 * Math.PI, 0.9 * Math.PI);
+          ctx.stroke();
+          // Yawn mouth
+          ctx.beginPath();
+          ctx.ellipse(hx, hy + 10, 9, 12, 0, 0, Math.PI * 2);
+          ctx.fillStyle = "#801822";
+          ctx.fill();
+          ctx.stroke();
+          // Steering wheel on Husband's side
+          ctx.beginPath();
+          ctx.arc(hx, hy + 96, 42, 0, Math.PI * 2);
+          ctx.lineWidth = 10;
+          ctx.strokeStyle = "#1F2937";
+          ctx.stroke();
+          ctx.restore();
+        }
+        // Wife (Passenger worried)
+        {
+          const wx = 381;
+          const wy = 472 + Math.sin(t * 3.1) * 2;
+          ctx.save();
+          this._roundRect(ctx, wx - 42, wy + 26, 84, 88, 22, PAL.wifePink, PAL.outline, 4.5);
+          ctx.beginPath();
+          ctx.arc(wx, wy - 12, 43, 0, Math.PI * 2);
+          ctx.fillStyle = PAL.skin;
+          ctx.fill();
+          ctx.lineWidth = 4.5;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(wx, wy - 20, 44, Math.PI * 0.9, Math.PI * 2.1);
+          ctx.fillStyle = "#212121";
+          ctx.fill();
+          ctx.stroke();
+          [-14, 14].forEach((ox) => {
+            ctx.beginPath();
+            ctx.arc(wx + ox, wy - 14, 7.5, 0, Math.PI * 2);
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(wx + ox - 2, wy - 14, 3.5, 0, Math.PI * 2);
+            ctx.fillStyle = PAL.outline;
+            ctx.fill();
+          });
+          ctx.restore();
+        }
+      } else {
+        // Scene 5-8: Wife Racer driving (Left seat) + Terrified Husband "หยึย!!" (Right seat)
+        // Wife Racer (Driver)
+        {
+          const wx = 159;
+          const wy = 468 + vibY * 0.7;
+          ctx.save();
+          this._roundRect(ctx, wx - 44, wy + 26, 88, 92, 22, PAL.wifePink, PAL.outline, 4.5);
+          ctx.beginPath();
+          ctx.arc(wx, wy - 14, 44, 0, Math.PI * 2);
+          ctx.fillStyle = PAL.skin;
+          ctx.fill();
+          ctx.lineWidth = 4.5;
+          ctx.strokeStyle = PAL.outline;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(wx, wy - 22, 45, Math.PI * 0.9, Math.PI * 2.1);
+          ctx.fillStyle = "#212121";
+          ctx.fill();
+          ctx.stroke();
+          // Fierce determined racer brows & eyes
+          [-15, 15].forEach((ox) => {
+            ctx.beginPath();
+            ctx.arc(wx + ox, wy - 14, 7.5, 0, Math.PI * 2);
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(wx + ox + 1, wy - 14, 3.8, 0, Math.PI * 2);
+            ctx.fillStyle = PAL.outline;
+            ctx.fill();
+          });
+          ctx.lineWidth = 4.5;
+          ctx.beginPath();
+          ctx.moveTo(wx - 28, wy - 28); ctx.lineTo(wx - 6, wy - 22);
+          ctx.moveTo(wx + 28, wy - 28); ctx.lineTo(wx + 6, wy - 22);
+          ctx.stroke();
+          // Smirk / talking mouth
+          ctx.beginPath();
+          ctx.arc(wx, wy + 8, 12, 0.1 * Math.PI, 0.9 * Math.PI);
+          ctx.stroke();
+          // Turning Steering Wheel
+          const steerRot = Math.sin(t * 16) * 0.45;
+          ctx.translate(wx, wy + 96);
+          ctx.rotate(steerRot);
+          ctx.beginPath();
+          ctx.arc(0, 0, 42, 0, Math.PI * 2);
+          ctx.lineWidth = 10;
+          ctx.strokeStyle = "#1F2937";
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(-36, 0); ctx.lineTo(36, 0);
+          ctx.lineWidth = 6;
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Husband Terrified ("หยึย!!")
+        {
+          const shakeX = Math.sin(t * 50) * 4;
+          const hx = 381 + shakeX;
+          const hy = 462 + vibY;
+          ctx.save();
+          this._roundRect(ctx, hx - 46, hy + 26, 92, 92, 22, "#5C6BC0", PAL.outline, 4.5);
+          // Raised trembling hands clinging to dashboard/handle
+          this._roundRect(ctx, hx - 58, hy + 18, 20, 48, 9, PAL.skin, PAL.outline, 3.5);
+          this._roundRect(ctx, hx + 38, hy + 18, 20, 48, 9, PAL.skin, PAL.outline, 3.5);
+
+          ctx.beginPath();
+          ctx.arc(hx, hy - 14, 46, 0, Math.PI * 2);
+          ctx.fillStyle = "#F7C5A8";
+          ctx.fill();
+          ctx.lineWidth = 4.5;
+          ctx.strokeStyle = PAL.outline;
+          ctx.stroke();
+          // Wind-blown spiky shocked hair
+          ctx.beginPath();
+          ctx.arc(hx, hy - 26, 46, Math.PI * 0.95, Math.PI * 2.05);
+          ctx.lineTo(hx + 28, hy - 74);
+          ctx.lineTo(hx, hy - 60);
+          ctx.lineTo(hx - 28, hy - 74);
+          ctx.closePath();
+          ctx.fillStyle = "#263238";
+          ctx.fill();
+          ctx.stroke();
+
+          // Giant bug-eyed shock!
+          [-16, 16].forEach((ox) => {
+            ctx.beginPath();
+            ctx.arc(hx + ox, hy - 14, 13, 0, Math.PI * 2);
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fill();
+            ctx.lineWidth = 3.5;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(hx + ox, hy - 14, 3.5, 0, Math.PI * 2);
+            ctx.fillStyle = PAL.outline;
+            ctx.fill();
+          });
+
+          // Wavy screaming/clenched mouth + sweat drops
+          ctx.beginPath();
+          ctx.ellipse(hx, hy + 14, 14, 12, 0, 0, Math.PI * 2);
+          ctx.fillStyle = "#801822";
+          ctx.fill();
+          ctx.lineWidth = 3.5;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(hx + 44, hy - 28, 7, 0, Math.PI * 2);
+          ctx.fillStyle = PAL.sweat;
+          ctx.fill();
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      // Red Dashboard + Hood edge at bottom of windshield
+      this._roundRect(ctx, 22, 578, CANVAS_W - 44, 118, 22, "#B71C1C", PAL.outline, 5);
+      this._roundRect(ctx, 44, 592, CANVAS_W - 88, 36, 12, "#263238", PAL.outline, 3.5);
+    }
+
     renderFrame() {
       if (!this.ctx) return;
       const ctx = this.ctx;
@@ -1838,6 +2157,12 @@
         this.state.board_mode === "office_idol_purple"
       ) {
         this._drawOfficeIdolCast(ctx, t, blink);
+      } else if (
+        this.state.board_mode === "car_husband_drive" ||
+        this.state.board_mode === "highway_pull_over" ||
+        this.state.board_mode === "car_wife_speed_drive"
+      ) {
+        this._drawCarWindshieldCast(ctx, t, blink);
       } else {
         this._drawLeftCharacter(ctx, t, blink);
         this._drawRightCharacter(ctx, t, blink);
@@ -1940,6 +2265,23 @@
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.65);
         noise.connect(filter).connect(gain).connect(ac.destination);
         noise.start(now);
+      } else if (sfxType === "car_tire_screech") {
+        // High-pitched tire screech + whoosh!
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(1650, now);
+        osc.frequency.exponentialRampToValueAtTime(980, now + 0.35);
+        osc.frequency.exponentialRampToValueAtTime(1420, now + 0.55);
+        const filter = ac.createBiquadFilter();
+        filter.type = "bandpass";
+        filter.frequency.value = 1400;
+        filter.Q.value = 4.5;
+        gain.gain.setValueAtTime(0.24, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+        osc.connect(filter).connect(gain).connect(ac.destination);
+        osc.start(now);
+        osc.stop(now + 0.62);
       } else {
         // stomach_growl
         const osc = ac.createOscillator();

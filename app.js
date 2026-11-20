@@ -16,6 +16,8 @@
     friend_left: { label: "🕺 เพื่อนผมรีเจ้นท์", cls: "spk-friend_left" },
     runner: { label: "🏃‍♂️ หนุ่มนักวิ่ง", cls: "spk-runner" },
     friend_right: { label: "👔 เพื่อนเสื้อสก๊อต", cls: "spk-friend_right" },
+    senior: { label: "💪 รุ่นพี่ไอดอล 100%", cls: "spk-senior" },
+    junior_tall: { label: "🤩 รุ่นน้องผู้เลื่อมใส", cls: "spk-junior_tall" },
   };
 
   let episodes = [];

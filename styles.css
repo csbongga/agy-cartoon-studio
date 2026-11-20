@@ -845,6 +845,8 @@ body {
 .spk-friend_left  { background: rgba(251, 146, 60, 0.2); color: #fed7aa; border-color: rgba(251, 146, 60, 0.45); }
 .spk-runner       { background: rgba(45, 212, 191, 0.18); color: #99f6e4; border-color: rgba(45, 212, 191, 0.42); }
 .spk-friend_right { background: rgba(96, 165, 250, 0.2); color: #bfdbfe; border-color: rgba(96, 165, 250, 0.45); }
+.spk-senior       { background: rgba(250, 204, 21, 0.18); color: #fef08a; border-color: rgba(250, 204, 21, 0.45); }
+.spk-junior_tall  { background: rgba(52, 211, 153, 0.18); color: #a7f3d0; border-color: rgba(52, 211, 153, 0.42); }
 
 /* ==========================================================================
    Tab 1: Right Column — Storyboard & Timeline Grid

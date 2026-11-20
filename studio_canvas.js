@@ -145,6 +145,21 @@
       sfx: "rimshot",
       jitter: 3.0,
     },
+    ep7: {
+      board_mode: "office_idol_purple",
+      board_title: "5 วันรวมกัน = 100% พอดี!!",
+      left_char: "boss",
+      left_expr: "fuming",
+      right_char: "somchai",
+      right_expr: "idea_hand",
+      popup_text: "อังคาร 25% พุธ 20% พฤหัส 15% ศุกร์ 10%!",
+      popup_style: "speech",
+      subtitle_text: "ทุ่มเท 5 วันรวมกันได้แค่ 100%\nงั้นสิ้นปีนี้ เอาโบนัสไปหาร 5 เหมือนกันนะ!!",
+      voiceover: "วันอังคารทำยี่สิบห้าเปอร์เซ็นต์ วันพุธทำยี่สิบ วันพฤหัสทำสิบห้า วันศุกร์ทำสิบเปอร์เซ็นต์ ครบหนึ่งร้อยเปอร์เซ็นต์พอดีเป๊ะ!",
+      speaker: "senior",
+      sfx: "rimshot",
+      jitter: 3.0,
+    },
   };
 
   class StudioCanvasEngine {
@@ -530,6 +545,44 @@
         // Lower floor behind counter
         ctx.fillStyle = "#4E342E";
         ctx.fillRect(0, 680, CANVAS_W, CANVAS_H - 680);
+
+        // Header banner
+        this._roundRect(ctx, 56, 56, 428, 68, 16, hdrC, PAL.outline, 4.5);
+        this._drawWrappedStrokeText(ctx, title, 270, 90, 396, 24, "700 22px Kanit, sans-serif", "#FFD54F", PAL.outline, 3);
+      } else if (mode === "office_idol_warm" || mode === "office_idol_blue" || mode === "office_idol_purple") {
+        const bgMap = {
+          office_idol_warm: ["#FFF8E1", "#FFE0B2", "#E65100"],
+          office_idol_blue: ["#E3F2FD", "#BBDEFB", "#1565C0"],
+          office_idol_purple: ["#F3E5F5", "#CE93D8", "#6A1B9A"],
+        };
+        const [topC, botC, hdrC] = bgMap[mode];
+        const grad = ctx.createLinearGradient(0, 0, 0, 680);
+        grad.addColorStop(0, topC);
+        grad.addColorStop(1, botC);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, CANVAS_W, 680);
+
+        // Office wall board showing weekly math
+        this._roundRect(ctx, 44, 152, 224, 114, 12, "#FFFFFF", PAL.woodFrame, 5);
+        this._drawWrappedStrokeText(
+          ctx,
+          "จ.30% + อ.25%\nพ.20%+พฤ.15%+ศ.10%\n= 100%!!",
+          156,
+          209,
+          204,
+          26,
+          "700 17px Kanit, sans-serif",
+          mode === "office_idol_purple" ? "#C62828" : "#1565C0",
+          null,
+          0
+        );
+
+        // Office Floor
+        ctx.fillStyle = "#D7CCC8";
+        ctx.fillRect(0, 665, CANVAS_W, CANVAS_H - 665);
+        ctx.strokeStyle = PAL.outline;
+        ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(0, 665); ctx.lineTo(CANVAS_W, 665); ctx.stroke();
 
         // Header banner
         this._roundRect(ctx, 56, 56, 428, 68, 16, hdrC, PAL.outline, 4.5);
@@ -1574,6 +1627,186 @@
       });
     }
 
+    _drawOfficeIdolCast(ctx, t, blink) {
+      const mode = this.state.board_mode;
+      const bossVisible = mode === "office_idol_purple" || this.state.left_expr !== "normal";
+      const bossAngry = this.state.left_expr === "fuming" || this.state.left_expr === "angry_point";
+
+      // 1) Boss with glasses standing behind the two juniors (back right)
+      if (bossVisible) {
+        const bx = 434;
+        const by = 438 + Math.sin(t * 2.2) * 2;
+        ctx.save();
+        // Dark suit
+        this._roundRect(ctx, bx - 44, by - 4, 88, 134, 22, PAL.bossSuit, PAL.outline, 4.5);
+        // White shirt & red tie
+        ctx.beginPath();
+        ctx.moveTo(bx - 16, by - 2); ctx.lineTo(bx + 16, by - 2); ctx.lineTo(bx, by + 44);
+        ctx.closePath();
+        ctx.fillStyle = PAL.shirtWhite;
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = PAL.outline;
+        ctx.stroke();
+
+        // Boss head
+        const hy = by - 50;
+        ctx.beginPath();
+        ctx.arc(bx, hy, 42, 0, Math.PI * 2);
+        ctx.fillStyle = bossAngry ? "#F79B84" : PAL.skin;
+        ctx.fill();
+        ctx.lineWidth = 4.5;
+        ctx.stroke();
+        // Hair
+        ctx.beginPath();
+        ctx.arc(bx, hy - 10, 42, Math.PI * 0.98, Math.PI * 2.02);
+        ctx.fillStyle = "#263238";
+        ctx.fill();
+        ctx.stroke();
+        // White-rimmed glare glasses
+        const ey = hy - 4;
+        this._roundRect(ctx, bx - 30, ey - 10, 26, 20, 5, "rgba(255,255,255,0.88)", PAL.outline, 3.5);
+        this._roundRect(ctx, bx + 4, ey - 10, 26, 20, 5, "rgba(255,255,255,0.88)", PAL.outline, 3.5);
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(bx - 4, ey); ctx.lineTo(bx + 4, ey); ctx.stroke();
+        // Stern brows
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(bx - 28, ey - 16); ctx.lineTo(bx - 6, ey - 10);
+        ctx.moveTo(bx + 28, ey - 16); ctx.lineTo(bx + 6, ey - 10);
+        ctx.stroke();
+
+        // Steam puffs when furious
+        if (bossAngry) {
+          for (let i = 0; i < 2; i++) {
+            const p = (t * 1.5 + i * 0.5) % 1;
+            ctx.globalAlpha = 1 - p;
+            ctx.beginPath();
+            ctx.arc(bx + (i === 0 ? -24 : 24), hy - 48 - p * 40, 10 + p * 8, 0, Math.PI * 2);
+            ctx.fillStyle = PAL.ragePink;
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = PAL.outline;
+            ctx.stroke();
+          }
+          ctx.globalAlpha = 1;
+        }
+        ctx.restore();
+      }
+
+      // 2) Dancing / Boasting Senior (Left)
+      {
+        const sway = Math.sin(t * 6.5) * 8;
+        const bob = Math.abs(Math.sin(t * 6.5)) * -6;
+        const sx = 122 + sway;
+        const sy = 534 + bob;
+        ctx.save();
+        // Outstretched dancing arms
+        const armWave = Math.sin(t * 8) * 16;
+        this._roundRect(ctx, sx - 82, sy - 18 + armWave, 42, 22, 10, "#FFF176", PAL.outline, 4);
+        this._roundRect(ctx, sx + 40, sy - 24 - armWave, 44, 22, 10, "#FFF176", PAL.outline, 4);
+
+        // Body (Yellow shirt + pink tie)
+        this._roundRect(ctx, sx - 48, sy - 8, 96, 134, 26, PAL.yellowShirt, PAL.outline, 4.5);
+        ctx.beginPath();
+        ctx.moveTo(sx - 7, sy - 4); ctx.lineTo(sx + 7, sy - 4);
+        ctx.lineTo(sx + 10, sy + 54); ctx.lineTo(sx, sy + 68); ctx.lineTo(sx - 10, sy + 54);
+        ctx.closePath();
+        ctx.fillStyle = PAL.pinkTie;
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = PAL.outline;
+        ctx.stroke();
+
+        // Head
+        const hy = sy - 58;
+        ctx.beginPath();
+        ctx.arc(sx, hy, 48, 0, Math.PI * 2);
+        ctx.fillStyle = PAL.skin;
+        ctx.fill();
+        ctx.lineWidth = 4.5;
+        ctx.stroke();
+        // Slick hair
+        ctx.beginPath();
+        ctx.arc(sx, hy - 12, 48, Math.PI * 0.96, Math.PI * 2.04);
+        ctx.fillStyle = "#212121";
+        ctx.fill();
+        ctx.stroke();
+
+        // Happy / dancing eyes
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.arc(sx - 16, hy - 4, 8, Math.PI, 0);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(sx + 16, hy - 4, 8, Math.PI, 0);
+        ctx.stroke();
+        // Big singing/boasting smile
+        ctx.beginPath();
+        ctx.arc(sx, hy + 12, 16, 0, Math.PI);
+        ctx.closePath();
+        ctx.fillStyle = "#EC407A";
+        ctx.fill();
+        ctx.stroke();
+
+        // Floating music notes ♪ ♫
+        const noteY = hy - 66 - ((t * 38) % 34);
+        this._drawWrappedStrokeText(ctx, "♪ ♫", sx + 48, noteY, 70, 22, "700 22px Kanit, sans-serif", "#FFD54F", PAL.outline, 3);
+        ctx.restore();
+      }
+
+      // 3) Two Juniors (Tall Junior & Short Junior)
+      [
+        { x: 318, y: 536, h: 124, shirt: "#81C784", tie: "#1565C0", r: 42 },
+        { x: 424, y: 562, h: 102, shirt: "#4FC3F7", tie: "#D32F2F", r: 38 },
+      ].forEach((jr, idx) => {
+        const jBob = Math.sin(t * 3 + idx) * 2;
+        const jx = jr.x;
+        const jy = jr.y + jBob;
+        ctx.save();
+        this._roundRect(ctx, jx - 38, jy - 4, 76, jr.h, 22, jr.shirt, PAL.outline, 4.5);
+        const hy = jy - 46;
+        ctx.beginPath();
+        ctx.arc(jx, hy, jr.r, 0, Math.PI * 2);
+        ctx.fillStyle = PAL.skin;
+        ctx.fill();
+        ctx.lineWidth = 4.5;
+        ctx.strokeStyle = PAL.outline;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(jx, hy - 10, jr.r, Math.PI * 0.98, Math.PI * 2.02);
+        ctx.fillStyle = "#1F2937";
+        ctx.fill();
+        ctx.stroke();
+
+        // Eyes (sweating wide eyes when boss behind, starry when warm)
+        const ey = hy - 4;
+        [-13, 13].forEach((ox) => {
+          ctx.beginPath();
+          ctx.arc(jx + ox, ey, 6.5, 0, Math.PI * 2);
+          ctx.fillStyle = mode === "office_idol_warm" ? "#FFF59D" : "#FFFFFF";
+          ctx.fill();
+          ctx.lineWidth = 3;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(jx + ox + (bossVisible ? 2 : 0), ey, 3, 0, Math.PI * 2);
+          ctx.fillStyle = PAL.outline;
+          ctx.fill();
+        });
+
+        // Sweat drop if Boss is behind
+        if (bossVisible) {
+          ctx.beginPath();
+          ctx.arc(jx - jr.r + 4, hy - 14, 6, 0, Math.PI * 2);
+          ctx.fillStyle = PAL.sweat;
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+        ctx.restore();
+      });
+    }
+
     renderFrame() {
       if (!this.ctx) return;
       const ctx = this.ctx;
@@ -1599,6 +1832,12 @@
         this.state.board_mode === "bar_counter_purple"
       ) {
         this._drawBarCounterCast(ctx, t, blink);
+      } else if (
+        this.state.board_mode === "office_idol_warm" ||
+        this.state.board_mode === "office_idol_blue" ||
+        this.state.board_mode === "office_idol_purple"
+      ) {
+        this._drawOfficeIdolCast(ctx, t, blink);
       } else {
         this._drawLeftCharacter(ctx, t, blink);
         this._drawRightCharacter(ctx, t, blink);
@@ -1768,6 +2007,12 @@
       } else if (spk === "friend_right") {
         utter.pitch = 0.78;
         utter.rate = 1.06;
+      } else if (spk === "senior") {
+        utter.pitch = 1.14;
+        utter.rate = 1.06;
+      } else if (spk === "junior_tall") {
+        utter.pitch = 1.32;
+        utter.rate = 1.1;
       } else {
         utter.pitch = 1.0;
         utter.rate = 1.06;
@@ -1807,6 +2052,8 @@
         friend_left: { voice: "th-TH-NiwatNeural", rate: "+8%", pitch: "-6Hz" },
         runner: { voice: "th-TH-NiwatNeural", rate: "+10%", pitch: "+8Hz" },
         friend_right: { voice: "th-TH-NiwatNeural", rate: "+10%", pitch: "-12Hz" },
+        senior: { voice: "th-TH-NiwatNeural", rate: "+10%", pitch: "+6Hz" },
+        junior_tall: { voice: "th-TH-NiwatNeural", rate: "+12%", pitch: "+14Hz" },
       };
       const vConf = voiceMap[this.state.speaker] || voiceMap.narrator;
 

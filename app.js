@@ -20,6 +20,9 @@
     junior_tall: { label: "🤩 รุ่นน้องผู้เลื่อมใส", cls: "spk-junior_tall" },
   };
 
+  const POSTED_STORAGE_KEY = "agy_tiktok_posted_eps";
+  const TIKTOK_UPLOAD_URL = "https://www.tiktok.com/tiktokstudio/upload";
+
   let episodes = [];
   let currentEpIndex = 0;
   let fsEpIndex = 0;
@@ -30,10 +33,71 @@
   let studioEngine = null;
   let toastTimer = null;
   let activateTabFn = null;
+  let ttActiveEpId = null;
+  let ttCaptionStyle = "viral";
+  let ttDashFilter = "all";
 
   // ------------------------------------------------------------------
   // Utilities & Audio/Video Sync
   // ------------------------------------------------------------------
+  function getPostedMap() {
+    try {
+      const raw = localStorage.getItem(POSTED_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function isEpPosted(epId) {
+    const map = getPostedMap();
+    return Boolean(map[epId]);
+  }
+
+  function setEpPosted(epId, posted) {
+    try {
+      const map = getPostedMap();
+      if (posted) map[epId] = true;
+      else delete map[epId];
+      localStorage.setItem(POSTED_STORAGE_KEY, JSON.stringify(map));
+    } catch {
+      // ignore storage quota errors
+    }
+  }
+
+  function triggerFileDownload(url, filename) {
+    if (!url) return;
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename || "video.mp4";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  async function copyTextToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        // fallback below
+      }
+    }
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      ta.remove();
+      return ok;
+    } catch {
+      return false;
+    }
+  }
   function pauseOtherVideos(exceptId) {
     const mainVid = document.getElementById("main-video");
     const fsVid = document.getElementById("home-fullscreen-video");
@@ -82,6 +146,7 @@
     const panels = {
       home: document.getElementById("tab-home"),
       theater: document.getElementById("tab-theater"),
+      tiktok: document.getElementById("tab-tiktok"),
       studio: document.getElementById("tab-studio"),
       pipeline: document.getElementById("tab-pipeline"),
     };
@@ -159,6 +224,8 @@
       .map((ep, idx) => {
         const poster = ep.thumbnail_url || (ep.scenes && ep.scenes[0] && ep.scenes[0].preview_url) || "";
         const dur = Number(ep.total_duration_sec || 0).toFixed(1);
+        const posted = isEpPosted(ep.id);
+        const postedBadge = posted ? `<span class="poster-posted-badge">✅ โพสต์ TikTok แล้ว</span>` : "";
         return `
           <article
             class="poster-card"
@@ -174,6 +241,7 @@
                 <span class="poster-ep-badge">EP.${ep.number}</span>
                 <span class="poster-dur-badge">${dur}s</span>
               </div>
+              ${postedBadge}
               <div class="poster-center-play" aria-hidden="true">
                 <span class="poster-play-circle">▶</span>
               </div>
@@ -181,14 +249,26 @@
             <div class="poster-body">
               <span class="poster-cat-pill">${escapeHtml(ep.category || "การ์ตูนสั้น")}</span>
               <h2 class="poster-title">${escapeHtml(ep.title || ep.short_title)}</h2>
-              <button type="button" class="btn btn-gold poster-cta">
-                ▶️ กดดูวิดีโอเต็มจอ
-              </button>
+              <div class="poster-actions">
+                <button type="button" class="btn btn-gold poster-cta">
+                  ▶️ กดดูวิดีโอเต็มจอ
+                </button>
+                <button type="button" class="btn btn-tiktok poster-tiktok-btn" data-ep-id="${escapeHtml(ep.id)}">
+                  🎵 เตรียมโพสต์ TikTok
+                </button>
+              </div>
             </div>
           </article>
         `;
       })
       .join("");
+
+    grid.querySelectorAll(".poster-tiktok-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openTikTokModal(btn.dataset.epId);
+      });
+    });
 
     grid.querySelectorAll(".poster-card").forEach((card) => {
       const open = () => {
@@ -259,6 +339,7 @@
     const btnNext = document.getElementById("btn-fs-next");
     const btnNative = document.getElementById("btn-fs-native");
     const btnInspect = document.getElementById("btn-fs-inspect-scenes");
+    const btnFsTikTok = document.getElementById("fs-open-tiktok");
     const fsVideo = document.getElementById("home-fullscreen-video");
 
     if (btnClose) btnClose.addEventListener("click", closeFullscreenModal);
@@ -292,6 +373,14 @@
           history.replaceState(null, "", "#theater");
         }
         selectEpisode(targetIdx, false);
+      });
+    }
+
+    if (btnFsTikTok) {
+      btnFsTikTok.addEventListener("click", () => {
+        const ep = episodes[fsEpIndex];
+        closeFullscreenModal();
+        if (ep) openTikTokModal(ep.id);
       });
     }
 
@@ -666,6 +755,14 @@
       });
     });
 
+    const btnTheaterTikTok = document.getElementById("btn-theater-tiktok");
+    if (btnTheaterTikTok) {
+      btnTheaterTikTok.addEventListener("click", () => {
+        const ep = episodes[currentEpIndex];
+        if (ep) openTikTokModal(ep.id);
+      });
+    }
+
     // Search & Speaker Filters
     const searchInput = document.getElementById("scene-search-input");
     if (searchInput) {
@@ -682,6 +779,504 @@
           p.classList.toggle("active", p === pill);
         });
         renderStoryboardGrid();
+      });
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // TikTok Post Kit & Publishing Dashboard
+  // ------------------------------------------------------------------
+  const TIKTOK_FALLBACKS = {
+    ep1: {
+      viral: "เคยไหม?! ห้องประชุมเงียบกริบจนได้ยินเสียงแอร์... แต่ท้องเจ้ากรรมดันร้อง 'โครก!' ดังลั่นห้อง 🤣🍜",
+      question: "ใครเคยท้องร้องหรือกลั้นขำสุดชีวิตกลางห้องประชุมบ้าง? รอดมาได้ยังไงคอมเมนต์เล่าหน่อย! 😂👇",
+      short: "ท้องร้องกลางห้องประชุม = เกมโอเวอร์โดนบอสเรียกเข้าห้องเย็น! 💀😂",
+      hashtags: ["#การ์ตูนสั้น", "#มุกตลก", "#มุกออฟฟิศ", "#ชีวิตพนักงานออฟฟิศ", "#เรื่องฮา", "#TikTokตลก", "#คลายเครียด"],
+    },
+    ep2: {
+      viral: "เมื่อบอสเรียกประชุมด่วนตอน 17:00 น. เวลาเลิกงานพอดีเป๊ะ... เลยเสนอไอเดียประหยัดงบสุดพีคให้ซะเลย! 🕔💡",
+      question: "ถ้าบอสเรียกประชุมตอน 5 โมงเย็น คุณจะตอบว่าอะไร? ทีมกลับบ้านตรงเวลาขอมือหน่อย! 🙋‍♂️🔥",
+      short: "ไอเดียกู้วิกฤตบริษัท: ปิดไฟ ปิดแอร์ แล้วแยกย้ายกลับบ้านครับบอส! 🏃‍♂️💨",
+      hashtags: ["#ประชุม5โมงเย็น", "#มนุษย์เงินเดือน", "#มุกออฟฟิศ", "#การ์ตูนฮา", "#ตลก", "#เลิกงานตรงเวลา", "#TikTokไทย"],
+    },
+    ep3: {
+      viral: "บอสสั่งให้ไปล้างหน้าแก้ง่วงให้สดชื่น... แต่หายไป 1 ชั่วโมง เดินตามไปดูถึงกับช็อก! 🚿😴",
+      question: "บ่ายสองโมงทีไรหนังตาหย่อนทุกที มีวิธีแก้ง่วงเด็ดๆ นอกจากการนอนคาอ่างไหมครับ? 🤣☕",
+      short: "สั่งให้ไปล้างหน้าแก้ง่วง... ดันนอนแช่อ่างหลับลึกกว่าเดิมอีก! 💦💤",
+      hashtags: ["#ง่วงนอนตอนบ่าย", "#มนุษย์ออฟฟิศ", "#การ์ตูนสั้น", "#มุกฮา", "#ตลก60วิ", "#คลายเครียด", "#ขายหัวเราะ"],
+    },
+    ep4: {
+      viral: "สามีช็อกบ้านรกของเกลื่อนพื้น ถามเมียว่าเมื่อไหร่จะทำ? คำตอบเมียทำเอาควันออกหู! 🛋️🤣",
+      question: "พ่อบ้านใจกล้าเจอคำตอบนี้เข้าไป ยอมจำนนเลยไหมครับ? แท็กแฟนมาดูด่วน! 😂❤️",
+      short: "รออีก 3 วันไม่ได้จะทำความสะอาดนะ... อีก 3 วันคุณก็จะชินไปเอง! 💥😆",
+      hashtags: ["#พ่อบ้านใจกล้า", "#มุกครอบครัว", "#คู่รักสายฮา", "#การ์ตูนตลก", "#เรื่องตลก", "#ชีวิตคู่", "#TikTokความบันเทิง"],
+    },
+    ep5: {
+      viral: "ลูกชายดีใจได้เล่นละครโรงเรียนเป็น 'พ่อ'! พ่อกำลังจะสอนบทผู้นำสุดเท่... แต่ลูกบอกจำมาจากพ่อทุกวัน! 🎭👓",
+      question: "บท 'คุณพ่อ' ในสายตาลูกชายของคุณเป็นแบบนี้เหมือนกันไหม? พยักหน้าแล้วพูดว่า จ้ะๆ! 🤣👇",
+      short: "ไม่ต้องซ้อมฮะพ่อ! แค่พยักหน้าแล้วพูดว่า 'จ้ะๆ' ง่ายจะตาย! 🧶😂",
+      hashtags: ["#ละครโรงเรียน", "#พ่อบ้านเกียร์มัว", "#มุกครอบครัว", "#การ์ตูนฮา", "#เรื่องฮาในบ้าน", "#ตลก", "#TikTokตลก"],
+    },
+    ep6: {
+      viral: "คุยโวว่าออกสตาร์ทนำ 100 เมตรแรกไม่เห็นฝุ่น! เพื่อนคิดว่าจะได้เหรียญทอง... ที่ไหนได้ลงแข่งมาราธอน! 🏃‍♂️💨",
+      question: "วิ่งมาราธอน 42 กิโล แต่นำแค่ 100 เมตรแรก... ที่เหลืออีก 41 โลจะรอดไหม คอมเมนต์ทายกัน! 🏅🤣",
+      short: "พอๆ ไม่ต้องเล่าต่อแล้ว! สปรินต์ 100 เมตรแรกในมาราธอน 42 โล! 😵💦",
+      hashtags: ["#นักวิ่งมาราธอน", "#มุกตลก", "#ฮาไม่ไหว", "#การ์ตูนสั้น", "#สายวิ่ง", "#เพื่อนฮา", "#TikTokฮา"],
+    },
+    ep7: {
+      viral: "รุ่นพี่สายชิลสอนน้องใหม่ว่า 'ผมทุ่มเทเต็ม 100%'! พอแจกแจงรายวันปุ๊บ... หัวหน้ายืนฟังข้างหลังเต็มๆ! 💯👓",
+      question: "จ.30% + อ.25% + พ.20% + พฤ.15% + ศ.10% = 100% เป๊ะ! สิ้นปีนี้โบนัสหาร 5 ดีไหมครับ? 😂🔥",
+      short: "ทุ่มเท 5 วันรวมกัน 100%... ระวังโบนัสสิ้นปีหาร 5 นะเจ้ารุ่นพี่! 💀🤣",
+      hashtags: ["#พนักงานดีเด่น", "#มุกออฟฟิศ", "#ชีวิตคนทำงาน", "#การ์ตูนตลก", "#ไอดอลออฟฟิศ", "#ตลก", "#โบนัส"],
+    },
+    ep8: {
+      viral: "สามีง่วงจัดเลยสลับให้ภรรยาขับแทน... แค่เหยียบคันเร่งปุ๊บ สามีตาสว่างหายง่วง 1000%! 🚗💨",
+      question: "ใครเคยนั่งรถข้างคนขับซิ่งจนต้องร้อง 'หยึย!!' บ้าง? กดหัวใจแล้วแชร์ให้คนขับดูเลย! 😱😂",
+      short: "ทีไม่ขับละก็ไม่หลับนะ! ซิ่งขนาดนี้ใครจะไปกล้าหลับลงล่ะจ๊ะแม่คุณ! 🏎️💥",
+      hashtags: ["#สลับคนขับ", "#เมียขับรถ", "#มุกครอบครัว", "#คู่รักสายฮา", "#ตาสว่าง", "#การ์ตูนสั้น", "#TikTokตลก"],
+    },
+  };
+
+  function getTikTokKit(ep) {
+    if (!ep) {
+      return {
+        coverUrl: "",
+        captions: { viral: "", question: "", short: "" },
+        hashtags: ["#การ์ตูนสั้น", "#เรื่องฮา"],
+      };
+    }
+
+    const fb = TIKTOK_FALLBACKS[ep.id] || {
+      viral: `${ep.title || ep.short_title} 😂🔥`,
+      question: `ดูจบแล้วขำฉากไหนที่สุด? คอมเมนต์บอกกันหน่อย! 👇🤣`,
+      short: `${ep.short_title || ep.title} ✨`,
+      hashtags: ["#การ์ตูนสั้น", "#เรื่องฮา", "#มุกตลก", "#TikTokตลก", "#AGYStudio"],
+    };
+
+    const raw = ep.tiktok || {};
+    const rawCaps = raw.captions || {};
+
+    let viral =
+      rawCaps.viral ||
+      rawCaps.viral_hook ||
+      raw.viral_hook ||
+      raw.viral_caption ||
+      (Array.isArray(rawCaps) ? rawCaps[0] : "") ||
+      fb.viral;
+
+    let question =
+      rawCaps.question ||
+      rawCaps.engagement ||
+      rawCaps.engagement_question ||
+      raw.engagement_question ||
+      (Array.isArray(rawCaps) ? rawCaps[1] : "") ||
+      fb.question;
+
+    let short =
+      rawCaps.short ||
+      rawCaps.short_punchy ||
+      raw.short_punchy ||
+      (Array.isArray(rawCaps) ? rawCaps[2] : "") ||
+      fb.short;
+
+    let hashtags = Array.isArray(raw.hashtags) && raw.hashtags.length ? raw.hashtags : fb.hashtags;
+    hashtags = hashtags.map((tag) => {
+      const clean = String(tag || "").trim();
+      return clean.startsWith("#") ? clean : `#${clean}`;
+    });
+
+    const coverUrl =
+      raw.cover_url ||
+      raw.recommended_cover_url ||
+      ep.thumbnail_url ||
+      (ep.scenes && ep.scenes[0] && ep.scenes[0].preview_url) ||
+      "";
+
+    return {
+      coverUrl,
+      captions: {
+        viral: String(viral),
+        question: String(question),
+        short: String(short),
+      },
+      hashtags,
+    };
+  }
+
+  function buildCaptionWithTags(baseCaption, hashtags, maxTags = 6) {
+    const tags = (hashtags || []).slice(0, maxTags).join(" ");
+    return tags ? `${baseCaption}\n\n${tags}` : baseCaption;
+  }
+
+  function updateTikTokCharCounter() {
+    const editor = document.getElementById("tiktok-caption-editor");
+    const counter = document.getElementById("tiktok-char-counter");
+    if (!editor || !counter) return;
+    const len = editor.value.length;
+    counter.textContent = `${len} / 2200 ตัวอักษร`;
+    counter.classList.toggle("over-limit", len > 2200);
+
+    // Sync active highlight on hashtag chips
+    document.querySelectorAll("#tiktok-hashtag-chips .tt-tag-chip").forEach((chip) => {
+      const tag = chip.dataset.tag || "";
+      chip.classList.toggle("in-caption", Boolean(tag && editor.value.includes(tag)));
+    });
+  }
+
+  function renderTikTokHashtagChips(hashtags) {
+    const wrap = document.getElementById("tiktok-hashtag-chips");
+    const editor = document.getElementById("tiktok-caption-editor");
+    if (!wrap || !editor) return;
+
+    wrap.innerHTML = hashtags
+      .map(
+        (tag) => `
+          <button type="button" class="tt-tag-chip" data-tag="${escapeHtml(tag)}">
+            ${escapeHtml(tag)}
+          </button>
+        `
+      )
+      .join("");
+
+    wrap.querySelectorAll(".tt-tag-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        const tag = chip.dataset.tag || "";
+        if (!tag) return;
+        const current = editor.value;
+        if (current.includes(tag)) {
+          editor.value = current
+            .replace(new RegExp(`\\s*${tag.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "g"), "")
+            .replace(/\n{3,}/g, "\n\n")
+            .trim();
+        } else {
+          const sep = current.trim() ? (current.includes("#") ? " " : "\n\n") : "";
+          editor.value = `${current.trim()}${sep}${tag}`;
+        }
+        updateTikTokCharCounter();
+      });
+    });
+
+    updateTikTokCharCounter();
+  }
+
+  function openTikTokModal(epId) {
+    const ep = episodes.find((item) => item.id === epId) || episodes[0];
+    if (!ep) return;
+    ttActiveEpId = ep.id;
+    ttCaptionStyle = "viral";
+
+    const kit = getTikTokKit(ep);
+    const modal = document.getElementById("tiktok-post-modal");
+    if (!modal) return;
+
+    document.getElementById("tt-modal-ep-badge").textContent = `EP.${ep.number}`;
+    document.getElementById("tt-modal-title").textContent = `🎵 เตรียมโพสต์: ${ep.short_title || ep.title}`;
+    const dur = Number(ep.total_duration_sec || 0).toFixed(1);
+    document.getElementById("tt-modal-meta").textContent = `${ep.width || 1080}×${ep.height || 1920} 9:16 • ${dur}s • พร้อมลง TikTok ทันที`;
+
+    const coverImg = document.getElementById("tt-cover-img");
+    coverImg.src = kit.coverUrl;
+    document.getElementById("tt-cover-dur").textContent = `${dur}s`;
+
+    const dlCover = document.getElementById("btn-tt-download-cover");
+    dlCover.href = kit.coverUrl;
+    dlCover.setAttribute("download", `AGY_TikTok_Cover_EP${ep.number}.png`);
+
+    const dlMp4 = document.getElementById("btn-tt-download-mp4");
+    dlMp4.href = ep.video_url;
+    dlMp4.setAttribute("download", `AGY_TikTok_EP${ep.number}.mp4`);
+
+    const postedCb = document.getElementById("tt-posted-checkbox");
+    const postedLbl = document.getElementById("tt-posted-label");
+    const isPosted = isEpPosted(ep.id);
+    postedCb.checked = isPosted;
+    postedLbl.textContent = isPosted ? "✅ โพสต์ลง TikTok แล้ว" : "ทำเครื่องหมายว่าโพสต์แล้ว";
+
+    // Reset style pills
+    document.querySelectorAll("#tt-style-pills .tt-style-pill").forEach((p) => {
+      p.classList.toggle("active", p.dataset.style === ttCaptionStyle);
+    });
+
+    const editor = document.getElementById("tiktok-caption-editor");
+    editor.value = buildCaptionWithTags(kit.captions[ttCaptionStyle], kit.hashtags);
+    renderTikTokHashtagChips(kit.hashtags);
+
+    const banner = document.getElementById("tt-oneclick-banner");
+    if (banner) {
+      banner.hidden = true;
+      banner.textContent = "";
+    }
+
+    modal.hidden = false;
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeTikTokModal() {
+    const modal = document.getElementById("tiktok-post-modal");
+    if (modal) modal.hidden = true;
+    const fsModal = document.getElementById("fullscreen-player-modal");
+    if (!fsModal || fsModal.hidden) {
+      document.body.style.overflow = "";
+    }
+  }
+
+  async function runOneClickTikTokPost(ep, customCaption) {
+    if (!ep) return;
+    const kit = getTikTokKit(ep);
+    const caption = customCaption || buildCaptionWithTags(kit.captions.viral, kit.hashtags);
+
+    await copyTextToClipboard(caption);
+    triggerFileDownload(ep.video_url, `AGY_TikTok_EP${ep.number}.mp4`);
+    window.open(TIKTOK_UPLOAD_URL, "_blank", "noopener,noreferrer");
+
+    const msg = "✅ คัดลอกแคปชัน & ดาวน์โหลดคลิปแล้ว! ลากไฟล์ .mp4 ลงหน้า TikTok แล้วกด Ctrl+V วางแคปชันได้เลย!";
+    const banner = document.getElementById("tt-oneclick-banner");
+    if (banner) {
+      banner.textContent = msg;
+      banner.hidden = false;
+    }
+    showToast(msg);
+  }
+
+  function initTikTokModal() {
+    const btnClose = document.getElementById("btn-tt-close");
+    const backdrop = document.getElementById("tt-backdrop");
+    const editor = document.getElementById("tiktok-caption-editor");
+    const postedCb = document.getElementById("tt-posted-checkbox");
+    const postedLbl = document.getElementById("tt-posted-label");
+    const btnCopy = document.getElementById("btn-tt-copy");
+    const btnOneClick = document.getElementById("btn-tt-oneclick");
+    const btnShareMobile = document.getElementById("btn-tt-share-mobile");
+
+    if (btnClose) btnClose.addEventListener("click", closeTikTokModal);
+    if (backdrop) backdrop.addEventListener("click", closeTikTokModal);
+
+    if (editor) {
+      editor.addEventListener("input", updateTikTokCharCounter);
+    }
+
+    document.querySelectorAll("#tt-style-pills .tt-style-pill").forEach((pill) => {
+      pill.addEventListener("click", () => {
+        const ep = episodes.find((item) => item.id === ttActiveEpId);
+        if (!ep || !editor) return;
+        ttCaptionStyle = pill.dataset.style || "viral";
+        document.querySelectorAll("#tt-style-pills .tt-style-pill").forEach((p) => {
+          p.classList.toggle("active", p === pill);
+        });
+        const kit = getTikTokKit(ep);
+        editor.value = buildCaptionWithTags(kit.captions[ttCaptionStyle] || kit.captions.viral, kit.hashtags);
+        updateTikTokCharCounter();
+      });
+    });
+
+    if (postedCb) {
+      postedCb.addEventListener("change", () => {
+        if (!ttActiveEpId) return;
+        setEpPosted(ttActiveEpId, postedCb.checked);
+        postedLbl.textContent = postedCb.checked ? "✅ โพสต์ลง TikTok แล้ว" : "ทำเครื่องหมายว่าโพสต์แล้ว";
+        renderHomeGallery();
+        renderTikTokDashboard();
+        showToast(postedCb.checked ? "✅ บันทึกสถานะ: โพสต์ลง TikTok แล้ว!" : "⏳ เปลี่ยนสถานะเป็นรอโพสต์แล้ว");
+      });
+    }
+
+    if (btnCopy && editor) {
+      btnCopy.addEventListener("click", async () => {
+        const ok = await copyTextToClipboard(editor.value);
+        if (ok) {
+          const orig = btnCopy.textContent;
+          btnCopy.textContent = "✅ คัดลอกแล้ว!";
+          showToast("✅ คัดลอกแคปชัน + แฮชแท็กแล้ว!");
+          setTimeout(() => {
+            btnCopy.textContent = orig;
+          }, 1800);
+        } else {
+          showToast("คัดลอกอัตโนมัติไม่สำเร็จ กรุณาคลุมดำและกด Ctrl+C");
+        }
+      });
+    }
+
+    if (btnOneClick && editor) {
+      btnOneClick.addEventListener("click", () => {
+        const ep = episodes.find((item) => item.id === ttActiveEpId);
+        if (ep) runOneClickTikTokPost(ep, editor.value);
+      });
+    }
+
+    if (btnShareMobile && editor) {
+      btnShareMobile.addEventListener("click", async () => {
+        const ep = episodes.find((item) => item.id === ttActiveEpId);
+        if (!ep) return;
+        const captionText = editor.value;
+        await copyTextToClipboard(captionText);
+
+        const origLabel = btnShareMobile.textContent;
+        btnShareMobile.disabled = true;
+        btnShareMobile.textContent = "⏳ กำลังเตรียมไฟล์วิดีโอสำหรับแชร์...";
+
+        try {
+          const resp = await fetch(ep.video_url);
+          if (!resp.ok) throw new Error("Fetch video failed");
+          const blob = await resp.blob();
+          const videoFile = new File([blob], `AGY_TikTok_${ep.id}.mp4`, { type: "video/mp4" });
+
+          if (navigator.canShare && navigator.canShare({ files: [videoFile] })) {
+            await navigator.share({
+              title: ep.short_title || ep.title,
+              text: captionText,
+              files: [videoFile],
+            });
+            showToast("✅ ส่งต่อไปยังหน้าแชร์มือถือแล้ว!");
+          } else {
+            triggerFileDownload(ep.video_url, `AGY_TikTok_EP${ep.number}.mp4`);
+            window.open(TIKTOK_UPLOAD_URL, "_blank", "noopener,noreferrer");
+            showToast("💻 เบราว์เซอร์นี้ไม่รองรับ Share ไฟล์ — คัดลอกแคปชัน & โหลดคลิปให้แทนแล้ว!");
+          }
+        } catch (err) {
+          if (err && err.name === "AbortError") {
+            showToast("ยกเลิกการแชร์ไฟล์");
+          } else {
+            triggerFileDownload(ep.video_url, `AGY_TikTok_EP${ep.number}.mp4`);
+            window.open(TIKTOK_UPLOAD_URL, "_blank", "noopener,noreferrer");
+            showToast("💻 ดาวน์โหลดคลิป & คัดลอกแคปชันพร้อมเปิดหน้า TikTok Upload แล้ว!");
+          }
+        } finally {
+          btnShareMobile.disabled = false;
+          btnShareMobile.textContent = origLabel;
+        }
+      });
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        const modal = document.getElementById("tiktok-post-modal");
+        if (modal && !modal.hidden) {
+          closeTikTokModal();
+        }
+      }
+    });
+  }
+
+  function renderTikTokDashboard() {
+    const grid = document.getElementById("tiktok-dashboard-grid");
+    const countEl = document.getElementById("tt-posted-count");
+    if (!grid) return;
+
+    const postedCount = episodes.filter((ep) => isEpPosted(ep.id)).length;
+    if (countEl) {
+      countEl.textContent = `${postedCount} / ${episodes.length} ตอน`;
+    }
+
+    const filtered = episodes.filter((ep) => {
+      const posted = isEpPosted(ep.id);
+      if (ttDashFilter === "posted") return posted;
+      if (ttDashFilter === "unposted") return !posted;
+      return true;
+    });
+
+    if (!filtered.length) {
+      grid.innerHTML = `
+        <div class="empty-scenes-state">
+          ไม่มีตอนที่ตรงกับสถานะตัวกรองนี้ 🎉
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = filtered
+      .map((ep) => {
+        const kit = getTikTokKit(ep);
+        const dur = Number(ep.total_duration_sec || 0).toFixed(1);
+        const posted = isEpPosted(ep.id);
+        const tagsHtml = kit.hashtags
+          .slice(0, 4)
+          .map((t) => `<span class="tt-mini-tag">${escapeHtml(t)}</span>`)
+          .join("");
+
+        return `
+          <article class="tt-dash-card ${posted ? "is-posted" : ""}">
+            <div class="tt-dash-top">
+              <div class="tt-dash-thumb">
+                <img src="${escapeHtml(kit.coverUrl)}" alt="EP.${ep.number}" loading="lazy" />
+                <span class="ep-num-badge">EP.${ep.number}</span>
+              </div>
+              <div class="tt-dash-meta">
+                <div class="tt-dash-badges">
+                  <span class="ep-cat-badge">${escapeHtml(ep.category || "การ์ตูนสั้น")} • ${dur}s</span>
+                  <button
+                    type="button"
+                    class="tt-status-btn ${posted ? "posted" : ""}"
+                    data-toggle-posted="${escapeHtml(ep.id)}"
+                  >
+                    ${posted ? "✅ โพสต์แล้ว" : "⏳ รอโพสต์"}
+                  </button>
+                </div>
+                <h2 class="tt-dash-title">${escapeHtml(ep.short_title || ep.title)}</h2>
+                <p class="tt-dash-hook">${escapeHtml(kit.captions.viral)}</p>
+              </div>
+            </div>
+
+            <div class="tt-dash-tags">${tagsHtml}</div>
+
+            <div class="tt-dash-actions">
+              <button
+                type="button"
+                class="btn btn-tiktok btn-open-kit"
+                data-open-kit="${escapeHtml(ep.id)}"
+              >
+                🎵 เปิดชุดเครื่องมือโพสต์ TikTok
+              </button>
+              <button
+                type="button"
+                class="btn btn-gold"
+                data-quick-post="${escapeHtml(ep.id)}"
+              >
+                🚀 1-Click Post
+              </button>
+              <a
+                href="${escapeHtml(ep.video_url)}"
+                download="AGY_TikTok_EP${ep.number}.mp4"
+                class="btn btn-outline-accent"
+              >
+                ⬇️ .MP4
+              </a>
+            </div>
+          </article>
+        `;
+      })
+      .join("");
+
+    grid.querySelectorAll("[data-open-kit]").forEach((btn) => {
+      btn.addEventListener("click", () => openTikTokModal(btn.dataset.openKit));
+    });
+
+    grid.querySelectorAll("[data-quick-post]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const ep = episodes.find((item) => item.id === btn.dataset.quickPost);
+        if (ep) runOneClickTikTokPost(ep);
+      });
+    });
+
+    grid.querySelectorAll("[data-toggle-posted]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const epId = btn.dataset.togglePosted;
+        const nextVal = !isEpPosted(epId);
+        setEpPosted(epId, nextVal);
+        renderHomeGallery();
+        renderTikTokDashboard();
+        showToast(nextVal ? "✅ บันทึกสถานะ: โพสต์ลง TikTok แล้ว!" : "⏳ เปลี่ยนสถานะเป็นรอโพสต์แล้ว");
+      });
+    });
+  }
+
+  function initTikTokDashboardFilters() {
+    document.querySelectorAll("#tt-dash-filters [data-tt-filter]").forEach((pill) => {
+      pill.addEventListener("click", () => {
+        ttDashFilter = pill.dataset.ttFilter || "all";
+        document.querySelectorAll("#tt-dash-filters [data-tt-filter]").forEach((p) => {
+          p.classList.toggle("active", p === pill);
+        });
+        renderTikTokDashboard();
       });
     });
   }
@@ -833,6 +1428,8 @@
   async function init() {
     initTabs();
     initFullscreenModal();
+    initTikTokModal();
+    initTikTokDashboardFilters();
     initTheaterControls();
     initStudio();
     initPipelineCopyButtons();
@@ -841,6 +1438,7 @@
     if (episodes.length) {
       updateGlobalStatsPill();
       renderHomeGallery();
+      renderTikTokDashboard();
       renderEpisodeCarousel();
       selectEpisode(0, false);
     } else {

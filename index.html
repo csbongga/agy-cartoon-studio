@@ -62,6 +62,19 @@
 
         <button
           type="button"
+          class="nav-tab nav-tab-tiktok"
+          role="tab"
+          aria-selected="false"
+          aria-controls="tab-tiktok"
+          data-tab="tiktok"
+        >
+          <span class="tab-emoji" aria-hidden="true">🎵</span>
+          <span class="tab-label">ศูนย์โพสต์ TikTok</span>
+          <span class="tab-en">Post Kit</span>
+        </button>
+
+        <button
+          type="button"
           class="nav-tab"
           role="tab"
           aria-selected="false"
@@ -197,6 +210,13 @@
                 >
                   📝 ดาวน์โหลด .SRT
                 </a>
+                <button
+                  type="button"
+                  id="btn-theater-tiktok"
+                  class="btn btn-tiktok btn-theater-tiktok"
+                >
+                  🎵 เตรียมโพสต์ TikTok
+                </button>
               </div>
             </div>
 
@@ -280,7 +300,46 @@
     </section>
 
     <!-- ========================================================= -->
-    <!-- TAB 2: LIVE 2D STUDIO                                     -->
+    <!-- TAB 3: TIKTOK PUBLISHING DASHBOARD                        -->
+    <!-- ========================================================= -->
+    <section id="tab-tiktok" class="tab-panel" role="tabpanel" hidden>
+      <div class="tiktok-dash-header glass-card">
+        <div class="tt-dash-title-wrap">
+          <span class="badge-tiktok">TIKTOK CREATOR HUB • 1-CLICK POST KIT</span>
+          <h1>🎵 ศูนย์เตรียมโพสต์ TikTok (TikTok Publishing Dashboard)</h1>
+          <p>
+            รวมชุดโพสต์ครบจบทุกตอน ทั้งแคปชันเรียกยอดวิว 3 สไตล์ แฮชแท็กไทยยอดนิยม ปกคลิป 9:16 และตัวช่วยอัปโหลดขึ้น TikTok Studio ในคลิกเดียว
+          </p>
+        </div>
+
+        <div class="tt-dash-controls">
+          <div class="tt-progress-pill" id="tt-dash-progress">
+            <span>สถานะโพสต์ช่อง:</span>
+            <strong id="tt-posted-count">0 / 8 ตอน</strong>
+          </div>
+          <div class="tt-filter-group" id="tt-dash-filters" role="group" aria-label="กรองสถานะโพสต์">
+            <button type="button" class="filter-pill active" data-tt-filter="all">ทั้งหมด</button>
+            <button type="button" class="filter-pill" data-tt-filter="unposted">⏳ รอโพสต์</button>
+            <button type="button" class="filter-pill" data-tt-filter="posted">✅ โพสต์แล้ว</button>
+          </div>
+          <a
+            href="https://www.tiktok.com/tiktokstudio/upload"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn btn-tiktok"
+          >
+            🚀 เปิด TikTok Studio Upload
+          </a>
+        </div>
+      </div>
+
+      <div class="tiktok-dashboard-grid" id="tiktok-dashboard-grid">
+        <!-- Populated dynamically by app.js -->
+      </div>
+    </section>
+
+    <!-- ========================================================= -->
+    <!-- TAB 4: LIVE 2D STUDIO                                     -->
     <!-- ========================================================= -->
     <section id="tab-studio" class="tab-panel" role="tabpanel" hidden>
       <div class="studio-header-bar glass-card">
@@ -672,12 +731,117 @@
           <button type="button" class="btn btn-gold" id="btn-fs-native">
             ⛶ ขยายเต็มจอแท้ 100%
           </button>
+          <button type="button" class="btn btn-tiktok" id="fs-open-tiktok">
+            🎵 โพสต์คลิปนี้ขึ้น TikTok
+          </button>
           <a id="fs-download-mp4" class="btn btn-outline-accent" href="#" download>
             ⬇️ ดาวน์โหลดคลิป (.MP4)
           </a>
           <button type="button" class="btn btn-outline-subtle" id="btn-fs-inspect-scenes">
             🎞️ ดูแยกซีนของตอนนี้
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- TIKTOK POST KIT MODAL                                     -->
+  <!-- ========================================================= -->
+  <div
+    id="tiktok-post-modal"
+    class="tt-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="tt-modal-title"
+    hidden
+  >
+    <div class="tt-backdrop" id="tt-backdrop"></div>
+    <div class="tt-dialog glass-card">
+      <div class="tt-modal-head">
+        <div class="tt-modal-head-left">
+          <span class="badge-tiktok" id="tt-modal-ep-badge">EP.1</span>
+          <div>
+            <h2 id="tt-modal-title">🎵 เตรียมโพสต์ TikTok</h2>
+            <p class="tt-modal-sub" id="tt-modal-meta">1080×1920 9:16 • พร้อมลง TikTok ทันที</p>
+          </div>
+        </div>
+        <button type="button" class="btn btn-close-fs" id="btn-tt-close" aria-label="ปิดหน้าต่าง TikTok">
+          ✕ ปิดหน้าต่าง
+        </button>
+      </div>
+
+      <div class="tt-modal-body">
+        <!-- Left Column: Cover Preview & Status Tracker -->
+        <div class="tt-cover-col">
+          <div class="tt-cover-frame">
+            <img id="tt-cover-img" src="" alt="ภาพปก TikTok" />
+            <span class="tt-cover-badge" id="tt-cover-dur">29.2s</span>
+            <span class="tt-cover-res">9:16 • 1080×1920</span>
+          </div>
+          <a
+            id="btn-tt-download-cover"
+            class="btn btn-outline-subtle tt-cover-dl"
+            href="#"
+            download
+          >
+            🖼️ ดาวน์โหลดภาพปก TikTok
+          </a>
+          <label class="tt-posted-toggle" for="tt-posted-checkbox">
+            <input type="checkbox" id="tt-posted-checkbox" />
+            <span class="toggle-track" aria-hidden="true"></span>
+            <span id="tt-posted-label">ทำเครื่องหมายว่าโพสต์แล้ว</span>
+          </label>
+        </div>
+
+        <!-- Right Column: Captions, Hashtags & 1-Click Actions -->
+        <div class="tt-editor-col">
+          <div class="tt-style-bar">
+            <span class="tt-label-sm">เลือกสไตล์แคปชัน (กดสลับได้ทันที):</span>
+            <div class="tt-style-pills" id="tt-style-pills">
+              <button type="button" class="tt-style-pill active" data-style="viral">
+                🔥 แคปชันไวรัลเรียกยอดวิว
+              </button>
+              <button type="button" class="tt-style-pill" data-style="question">
+                💬 แคปชันชวนคอมเมนต์
+              </button>
+              <button type="button" class="tt-style-pill" data-style="short">
+                ⚡ แคปชันสั้นกระชับ
+              </button>
+            </div>
+          </div>
+
+          <div class="tt-textarea-wrap">
+            <div class="tt-textarea-head">
+              <label for="tiktok-caption-editor">แคปชัน + แฮชแท็ก (แก้ไขเพิ่มเติมได้)</label>
+              <span class="tt-char-counter" id="tiktok-char-counter">0 / 2200 ตัวอักษร</span>
+            </div>
+            <textarea id="tiktok-caption-editor" rows="5" placeholder="กำลังโหลดแคปชัน..."></textarea>
+          </div>
+
+          <div class="tt-hashtags-wrap">
+            <span class="tt-label-sm">คลิกที่แฮชแท็กเพื่อเพิ่ม/นำออกจากแคปชัน:</span>
+            <div class="tt-hashtag-chips" id="tiktok-hashtag-chips">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <div class="tt-oneclick-banner" id="tt-oneclick-banner" hidden></div>
+
+          <div class="tt-actions-grid">
+            <button type="button" class="btn btn-tiktok-hero" id="btn-tt-oneclick">
+              🚀 ปุ่มลัดครบจบในคลิกเดียว (คัดลอกแคปชัน + โหลดคลิป .MP4 + เปิดหน้า TikTok Upload)
+            </button>
+            <button type="button" class="btn btn-gold" id="btn-tt-copy">
+              📋 คัดลอกแคปชัน + แฮชแท็กอย่างเดียว
+            </button>
+            <a id="btn-tt-download-mp4" class="btn btn-outline-accent" href="#" download>
+              ⬇️ ดาวน์โหลดไฟล์วิดีโอ (.MP4)
+            </a>
+            <button type="button" class="btn btn-outline-subtle tt-share-btn" id="btn-tt-share-mobile">
+              📱 แชร์เข้าแอป TikTok บนมือถือ (Web Share API)
+            </button>
+          </div>
         </div>
       </div>
     </div>
